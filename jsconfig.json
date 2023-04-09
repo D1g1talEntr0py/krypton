@@ -1,0 +1,12 @@
+{
+	"compilerOptions": {
+		"baseUrl": "./src",
+		"checkJs": false,
+		"module": "ES2022",
+		"target": "ES2022",
+		"noImplicitAny": false,
+		"moduleResolution": "NodeNext"
+	},
+	"include": [ "./", "src/**/*" ],
+	"exclude": [ "node_modules", "dist" ]
+}

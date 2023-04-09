@@ -1,0 +1,65 @@
+{
+	"env": {
+		"browser": true,
+		"es2022": true,
+		"node": true
+	},
+	"plugins": ["compat", "jsdoc"],
+	"extends": ["eslint:recommended", "plugin:compat/recommended", "plugin:jsdoc/recommended"],
+	"overrides": [],
+	"parserOptions": {
+		"ecmaVersion": 2022,
+		"sourceType": "module"
+	},
+	"rules": {
+		"no-prototype-builtins": "off",
+		"indent": [
+			"error",
+			"tab",
+			{ "SwitchCase": 1 }
+		],
+		"linebreak-style": [
+			"error",
+			"unix"
+		],
+		"quotes": [
+			"error",
+			"single"
+		],
+		"semi": [
+			"error",
+			"always"
+		]
+	},
+	"settings": {
+		"jsdoc": {
+			"preferredTypes": {
+				"Object": "Object",
+				"PropertyKey": "PropertyKey",
+				"PropertyDescriptor": "PropertyDescriptor",
+				"EventListener": "EventListener",
+				"AddEventListenerOptions": "AddEventListenerOptions",
+				"CryptoKey": "CryptoKey",
+				"CryptoKeyPair": "CryptoKeyPair",
+				"AesKeyGenParams": "AesKeyGenParams",
+				"RsaKeyGenParams": "RsaKeyGenParams",
+				"RsaOaepParams": "RsaOaepParams",
+				"AesCbcParams": "AesCbcParams",
+				"AesCtrParams": "AesCtrParams",
+				"AesGcmParams": "AesGcmParams"
+			},
+			"structuredTags": {
+				"template": {
+					"name": "namepath-defining",
+					"type": false
+				}
+			},
+			"tagNamePreference": {
+				"augments": {
+					"message": "@extends is to be used over @augments as it is more evocative of classes than @augments",
+					"replacement": "extends"
+				}
+			}
+		}
+	}
+}

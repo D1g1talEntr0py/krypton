@@ -1,0 +1,44 @@
+{
+  "name": "krypton",
+  "version": "1.0.0",
+  "description": "Simple wrapper for the Web Crypto API",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "type": "module",
+  "scripts": {
+    "test": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js"
+  },
+  "keywords": [
+    "Crypto",
+    "Encryption"
+  ],
+  "author": "D1g1talEntr0py",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^8.38.0",
+    "eslint-plugin-compat": "^4.1.4",
+    "eslint-plugin-jsdoc": "^40.1.2",
+    "jest": "^29.5.0"
+  },
+  "browserslist": [
+    "defaults",
+    "not ios_saf < 15",
+    "not op_mini all"
+  ],
+  "jest": {
+    "verbose": true,
+    "transform": {},
+    "coverageDirectory": "./tests/coverage/",
+    "coveragePathIgnorePatterns": [
+      ".d.ts",
+      "<rootDir>/src/js/ext/",
+      "/node_modules/"
+    ],
+    "collectCoverage": true,
+    "collectCoverageFrom": [
+      "src/**/*"
+    ]
+  }
+}
