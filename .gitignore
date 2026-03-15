@@ -16,3 +16,4 @@ dist
 node_modules
 scratch.js
 tests/coverage/
+.tsbuild/

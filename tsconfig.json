@@ -1,0 +1,22 @@
+{
+	"compilerOptions": {
+		"strict": true,
+		"declaration": true,
+		"isolatedDeclarations": true,
+		"isolatedModules": true,
+		"verbatimModuleSyntax": true,
+		"noUncheckedSideEffectImports": true,
+		"useUnknownInCatchVariables": true,
+		"forceConsistentCasingInFileNames": true,
+		"allowUnusedLabels": false,
+		"allowUnreachableCode": false,
+		"noImplicitOverride": true,
+		"noImplicitReturns": true,
+		"lib": [ "ESNext", "DOM" ],
+		"target": "ESNext",
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"types": [ "node" ]
+	},
+	"include": [ "src/" ]
+}
