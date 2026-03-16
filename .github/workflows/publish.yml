@@ -23,9 +23,9 @@ jobs:
         with:
           node-version: 'lts/*'
           cache: pnpm
-      - run: npm config set "//registry.npmjs.org/:_authToken" ""
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm install -g npm@latest
       - run: pnpm install --frozen-lockfile
       - run: npx -y -p semantic-release -p @semantic-release/changelog -p @semantic-release/git -p @semantic-release/exec -p conventional-changelog-conventionalcommits semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_CONFIG_PROVENANCE: 'true'
