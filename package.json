@@ -1,7 +1,7 @@
 {
   "name": "@d1g1tal/krypton",
   "author": "D1g1talEntr0py",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "license": "MIT",
   "description": "Simple wrapper for the Web Crypto API",
   "homepage": "https://github.com/D1g1talEntr0py/krypton#readme",
