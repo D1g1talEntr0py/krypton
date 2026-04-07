@@ -1,22 +1,18 @@
 {
 	"compilerOptions": {
-		"strict": true,
+		"sourceMap": true,
 		"declaration": true,
 		"isolatedDeclarations": true,
 		"isolatedModules": true,
-		"verbatimModuleSyntax": true,
-		"noUncheckedSideEffectImports": true,
-		"useUnknownInCatchVariables": true,
-		"forceConsistentCasingInFileNames": true,
 		"allowUnusedLabels": false,
 		"allowUnreachableCode": false,
 		"noImplicitOverride": true,
 		"noImplicitReturns": true,
-		"lib": [ "ESNext", "DOM" ],
-		"target": "ESNext",
-		"module": "ESNext",
-		"moduleResolution": "Bundler",
-		"types": [ "node" ]
+		"stableTypeOrdering": true,
+		"noUncheckedIndexedAccess": true,
+		"rootDir": "./src",
+		"lib": [ "esnext", "dom" ],
+		"module": "preserve"
 	},
-	"include": [ "src/" ]
+	"include": [ "./src" ]
 }
