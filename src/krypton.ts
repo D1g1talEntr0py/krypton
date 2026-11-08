@@ -22,6 +22,13 @@ export type CipherMap = { [K in AesAlgorithm]: AesCipher } & {
 	'ECDH': EcdhCipher;
 };
 
+export type CipherOptionsMap = { [K in AesAlgorithm]: { key?: Parameters<typeof AesCipher.create>[1] } } & {
+	'RSA-OAEP': Parameters<typeof RsaCipher.create>[0];
+	'HMAC': Parameters<typeof HmacCipher.create>[0];
+	'ECDSA': Parameters<typeof EcdsaCipher.create>[0];
+	'ECDH': Parameters<typeof EcdhCipher.create>[0];
+};
+
 /**
  * Krypton is a simple wrapper around the Web Crypto API that provides a unified interface for encryption, decryption, key management, and other cryptographic operations. It supports multiple algorithms including AES, RSA, HMAC, ECDSA, and ECDH.
  *
@@ -152,15 +159,18 @@ export class Krypton {
 	 * @param options - Optional configuration for the cipher
 	 * @returns A promise that resolves to the appropriate cipher instance
 	 */
-	static async create<A extends keyof CipherMap>(algorithm: A, options?: Record<string, unknown>): Promise<CipherMap[A]> {
+	static async create<A extends keyof CipherMap>(algorithm: A, options?: CipherOptionsMap[A]): Promise<CipherMap[A]> {
 		switch (algorithm) {
 			case Krypton.Algorithm.AES_CBC:
 			case Krypton.Algorithm.AES_CTR:
-			case Krypton.Algorithm.AES_GCM: return await (await import('./ciphers/aes.js')).AesCipher.create(algorithm, options?.key as CryptoKey | JsonWebKey | undefined) as CipherMap[A];
-			case Krypton.Algorithm.RSA_OAEP: return await (await import('./ciphers/rsa.js')).RsaCipher.create(options) as CipherMap[A];
-			case Krypton.Algorithm.HMAC: return await (await import('./ciphers/hmac.js')).HmacCipher.create(options) as CipherMap[A];
-			case Krypton.Algorithm.ECDSA: return await (await import('./ciphers/ecdsa.js')).EcdsaCipher.create(options) as CipherMap[A];
-			case Krypton.Algorithm.ECDH: return await (await import('./ciphers/ecdh.js')).EcdhCipher.create(options) as CipherMap[A];
+			case Krypton.Algorithm.AES_GCM: {
+				const aesOptions = options as CipherOptionsMap[AesAlgorithm] | undefined;
+				return await (await import('./ciphers/aes.js')).AesCipher.create(algorithm, aesOptions?.key) as CipherMap[A];
+			}
+			case Krypton.Algorithm.RSA_OAEP: return await (await import('./ciphers/rsa.js')).RsaCipher.create(options as CipherOptionsMap['RSA-OAEP']) as CipherMap[A];
+			case Krypton.Algorithm.HMAC: return await (await import('./ciphers/hmac.js')).HmacCipher.create(options as CipherOptionsMap['HMAC']) as CipherMap[A];
+			case Krypton.Algorithm.ECDSA: return await (await import('./ciphers/ecdsa.js')).EcdsaCipher.create(options as CipherOptionsMap['ECDSA']) as CipherMap[A];
+			case Krypton.Algorithm.ECDH: return await (await import('./ciphers/ecdh.js')).EcdhCipher.create(options as CipherOptionsMap['ECDH']) as CipherMap[A];
 			default: throw new Error(`Unsupported cipher algorithm: ${algorithm}`);
 		}
 	}
