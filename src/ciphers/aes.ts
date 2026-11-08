@@ -110,9 +110,9 @@ export class AesCipher implements EncryptionCipher {
 			? new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
 			: new Uint8Array(data);
 		const ivLength = AesCipher.getIvLength(this.mode);
-		const parameters = AesCipher.rebuildParameters(this.algorithm, this.mode, dataBytes.slice(0, ivLength), additionalData);
+		const parameters = AesCipher.rebuildParameters(this.algorithm, this.mode, dataBytes.subarray(0, ivLength), additionalData);
 
-		return await Krypton.decryptBytes(parameters, this.key, dataBytes.slice(ivLength));
+		return await Krypton.decryptBytes(parameters, this.key, dataBytes.subarray(ivLength));
 	}
 
 	/**

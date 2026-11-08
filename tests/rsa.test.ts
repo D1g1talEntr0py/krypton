@@ -1,12 +1,24 @@
-import { describe, it, expect } from 'vitest';
+import { beforeAll, describe, it, expect } from 'vitest';
 import { Krypton } from '../src/krypton.js';
 import { RsaCipher } from '../src/ciphers/rsa.js';
 
 describe('RsaCipher', () => {
+	let defaultKeyPair: CryptoKeyPair;
+
+	beforeAll(async () => {
+		defaultKeyPair = await Krypton.generateKey(Krypton.Algorithm.RSA_OAEP) as CryptoKeyPair;
+	});
+
+	const createWithDefaultKey = () => RsaCipher.create({ keyPair: defaultKeyPair });
+
 	describe('create', () => {
 		it('should create an RSA-OAEP cipher via Krypton.create', async () => {
 			const rsa = await Krypton.create('RSA-OAEP');
 			expect(rsa).toBeInstanceOf(RsaCipher);
+
+			const publicKey = await rsa.exportPublicKey();
+			expect(publicKey.alg).toBe('RSA-OAEP-512');
+			expect(Buffer.from(publicKey.n!, 'base64url').byteLength * 8).toBe(4096);
 		});
 
 		it('should use the requested hash and modulus length when generating a key pair', async () => {
@@ -18,28 +30,27 @@ describe('RsaCipher', () => {
 		});
 
 		it('should create from an existing key pair', async () => {
-			const keyPair = await Krypton.generateKey(Krypton.Algorithm.RSA_OAEP) as CryptoKeyPair;
-			const rsa = await RsaCipher.create({ keyPair });
+			const rsa = await RsaCipher.create({ keyPair: defaultKeyPair });
 			expect(rsa).toBeInstanceOf(RsaCipher);
+
+			const publicKey = await rsa.exportPublicKey();
+			expect(Buffer.from(publicKey.n!, 'base64url').byteLength * 8).toBe(4096);
 		});
 
 		it('should create from separate public and private keys', async () => {
-			const keyPair = await Krypton.generateKey(Krypton.Algorithm.RSA_OAEP) as CryptoKeyPair;
-			const rsa = await RsaCipher.create({ publicKey: keyPair.publicKey, privateKey: keyPair.privateKey });
+			const rsa = await RsaCipher.create({ publicKey: defaultKeyPair.publicKey, privateKey: defaultKeyPair.privateKey });
 			expect(rsa).toBeInstanceOf(RsaCipher);
 		});
 
 		it('should reject an incomplete public and private key pair', async () => {
-			const keyPair = await Krypton.generateKey(Krypton.Algorithm.RSA_OAEP) as CryptoKeyPair;
-
-			await expect(RsaCipher.create({ publicKey: keyPair.publicKey })).rejects.toThrow('Both publicKey and privateKey must be provided');
-			await expect(RsaCipher.create({ privateKey: keyPair.privateKey })).rejects.toThrow('Both publicKey and privateKey must be provided');
+			await expect(RsaCipher.create({ publicKey: defaultKeyPair.publicKey })).rejects.toThrow('Both publicKey and privateKey must be provided');
+			await expect(RsaCipher.create({ privateKey: defaultKeyPair.privateKey })).rejects.toThrow('Both publicKey and privateKey must be provided');
 		});
 	});
 
 	describe('encrypt / decrypt', () => {
 		it('should encrypt and decrypt a string', async () => {
-			const rsa = await Krypton.create('RSA-OAEP');
+			const rsa = await createWithDefaultKey();
 			const data = 'Hello, RSA!';
 			const encrypted = await rsa.encrypt(data);
 			expect(encrypted).toBeInstanceOf(ArrayBuffer);
@@ -48,7 +59,7 @@ describe('RsaCipher', () => {
 		});
 
 		it('should encrypt and decrypt unicode and emoji', async () => {
-			const rsa = await Krypton.create('RSA-OAEP');
+			const rsa = await createWithDefaultKey();
 			const data = '🔐 Secret RSA 鍵 🔑';
 			const encrypted = await rsa.encrypt(data);
 			const decrypted = await rsa.decrypt(encrypted);
@@ -56,7 +67,7 @@ describe('RsaCipher', () => {
 		});
 
 		it('should decrypt arbitrary binary plaintext without UTF-8 conversion', async () => {
-			const rsa = await Krypton.create('RSA-OAEP');
+			const rsa = await createWithDefaultKey();
 			const data = new Uint8Array([0, 0xff, 0xc3, 0x28, 0x80, 0, 0xfe]);
 			const encrypted = await rsa.encrypt(data);
 			const decrypted = await rsa.decryptBytes(encrypted);
@@ -65,14 +76,14 @@ describe('RsaCipher', () => {
 		});
 
 		it('should encrypt and decrypt an empty string', async () => {
-			const rsa = await Krypton.create('RSA-OAEP');
+			const rsa = await createWithDefaultKey();
 			const encrypted = await rsa.encrypt('');
 			const decrypted = await rsa.decrypt(encrypted);
 			expect(decrypted).toEqual('');
 		});
 
 		it('should produce different ciphertext for the same plaintext', async () => {
-			const rsa = await Krypton.create('RSA-OAEP');
+			const rsa = await createWithDefaultKey();
 			const data = 'Same data';
 			const encrypted1 = await rsa.encrypt(data);
 			const encrypted2 = await rsa.encrypt(data);
@@ -83,7 +94,7 @@ describe('RsaCipher', () => {
 		});
 
 		it('should encrypt with label and decrypt with same label', async () => {
-			const rsa = await Krypton.create('RSA-OAEP');
+			const rsa = await createWithDefaultKey();
 			const data = 'Labeled message';
 			const label = Krypton.encode('my-label');
 			const encrypted = await rsa.encrypt(data, label);
@@ -92,7 +103,7 @@ describe('RsaCipher', () => {
 		});
 
 		it('should fail to decrypt with wrong label', async () => {
-			const rsa = await Krypton.create('RSA-OAEP');
+			const rsa = await createWithDefaultKey();
 			const data = 'Labeled message';
 			const label = Krypton.encode('correct-label');
 			const wrongLabel = Krypton.encode('wrong-label');
@@ -103,27 +114,27 @@ describe('RsaCipher', () => {
 
 	describe('key export', () => {
 		it('should export public key as JWK', async () => {
-			const rsa = await Krypton.create('RSA-OAEP');
+			const rsa = await createWithDefaultKey();
 			const jwk = await rsa.exportPublicKey();
 			expect(jwk).toHaveProperty('kty', 'RSA');
 			expect(jwk).toHaveProperty('key_ops');
 		});
 
 		it('should export private key as JWK', async () => {
-			const rsa = await Krypton.create('RSA-OAEP');
+			const rsa = await createWithDefaultKey();
 			const jwk = await rsa.exportPrivateKey();
 			expect(jwk).toHaveProperty('kty', 'RSA');
 			expect(jwk).toHaveProperty('d'); // private exponent
 		});
 
 		it('should export public key in SPKI format', async () => {
-			const rsa = await Krypton.create('RSA-OAEP');
+			const rsa = await createWithDefaultKey();
 			const spki = await rsa.exportPublicKey('spki');
 			expect(spki).toBeInstanceOf(ArrayBuffer);
 		});
 
 		it('should export private key in PKCS8 format', async () => {
-			const rsa = await Krypton.create('RSA-OAEP');
+			const rsa = await createWithDefaultKey();
 			const pkcs8 = await rsa.exportPrivateKey('pkcs8');
 			expect(pkcs8).toBeInstanceOf(ArrayBuffer);
 		});
