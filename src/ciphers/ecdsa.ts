@@ -38,7 +38,7 @@ export class EcdsaCipher implements SigningCipher {
 			return new EcdsaCipher(options.keyPair.publicKey, options.keyPair.privateKey, hash);
 		}
 
-		const keyPair = await Krypton.generateKey(Krypton.Algorithm.ECDSA, { usages: ['sign', 'verify'] }) as CryptoKeyPair;
+		const keyPair = await Krypton.generateKey(Krypton.Algorithm.ECDSA, { usages: ['sign', 'verify'], namedCurve: options?.namedCurve }) as CryptoKeyPair;
 
 		return new EcdsaCipher(keyPair.publicKey, keyPair.privateKey, hash);
 	}

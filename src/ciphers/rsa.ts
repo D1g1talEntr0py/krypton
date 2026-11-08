@@ -37,7 +37,11 @@ export class RsaCipher implements EncryptionCipher {
 			return new RsaCipher(options.publicKey, options.privateKey);
 		}
 
-		const keyPair = await Krypton.generateKey(Krypton.Algorithm.RSA_OAEP, { usages: ['encrypt', 'decrypt'] }) as CryptoKeyPair;
+		const keyPair = await Krypton.generateKey(Krypton.Algorithm.RSA_OAEP, {
+			usages: ['encrypt', 'decrypt'],
+			hash: options?.hash,
+			modulusLength: options?.modulusLength
+		}) as CryptoKeyPair;
 
 		return new RsaCipher(keyPair.publicKey, keyPair.privateKey);
 	}

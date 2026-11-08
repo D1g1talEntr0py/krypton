@@ -9,6 +9,13 @@ describe('EcdsaCipher', () => {
 			expect(ecdsa).toBeInstanceOf(EcdsaCipher);
 		});
 
+		it('should use the requested curve when generating a key pair', async () => {
+			const ecdsa = await EcdsaCipher.create({ namedCurve: 'P-384' });
+			const publicKey = await ecdsa.exportPublicKey();
+
+			expect(publicKey.crv).toBe('P-384');
+		});
+
 		it('should create from an existing key pair', async () => {
 			const keyPair = await Krypton.generateKey(Krypton.Algorithm.ECDSA, { usages: ['sign', 'verify'] }) as CryptoKeyPair;
 			const ecdsa = await EcdsaCipher.create({ keyPair });

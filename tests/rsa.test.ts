@@ -9,6 +9,14 @@ describe('RsaCipher', () => {
 			expect(rsa).toBeInstanceOf(RsaCipher);
 		});
 
+		it('should use the requested hash and modulus length when generating a key pair', async () => {
+			const rsa = await RsaCipher.create({ hash: Krypton.Hash.SHA_256, modulusLength: 2048 });
+			const publicKey = await rsa.exportPublicKey();
+
+			expect(publicKey.alg).toBe('RSA-OAEP-256');
+			expect(Buffer.from(publicKey.n!, 'base64url').byteLength * 8).toBe(2048);
+		});
+
 		it('should create from an existing key pair', async () => {
 			const keyPair = await Krypton.generateKey(Krypton.Algorithm.RSA_OAEP) as CryptoKeyPair;
 			const rsa = await RsaCipher.create({ keyPair });

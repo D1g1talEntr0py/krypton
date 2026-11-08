@@ -124,8 +124,8 @@ export class Krypton {
 	 * @returns A promise that resolves to the generated key
 	 * @throws {Error} If the algorithm is not supported
 	 */
-	static async generateKey(algorithm: string = Krypton.Algorithm.AES_GCM, { extractable = true, usages = [Krypton.KeyUsage.encrypt, Krypton.KeyUsage.decrypt], hash, namedCurve }: { extractable?: boolean; usages?: KeyUsage[]; hash?: string; namedCurve?: string } = {}): Promise<CryptoKey | CryptoKeyPair> {
-		return await crypto.subtle.generateKey(Krypton.generateKeyParameters(algorithm, { hash, namedCurve }), extractable, usages);
+	static async generateKey(algorithm: string = Krypton.Algorithm.AES_GCM, { extractable = true, usages = [Krypton.KeyUsage.encrypt, Krypton.KeyUsage.decrypt], hash, namedCurve, modulusLength }: { extractable?: boolean; usages?: KeyUsage[]; hash?: string; namedCurve?: string; modulusLength?: number } = {}): Promise<CryptoKey | CryptoKeyPair> {
+		return await crypto.subtle.generateKey(Krypton.generateKeyParameters(algorithm, { hash, namedCurve, modulusLength }), extractable, usages);
 	}
 
 	/**
@@ -255,12 +255,12 @@ export class Krypton {
 	 * @returns The parameters for key generation
 	 * @throws {Error} If the algorithm is not supported
 	 */
-	private static generateKeyParameters(algorithm: string, options?: { hash?: string; namedCurve?: string }): AesKeyGenParams | RsaHashedKeyGenParams | HmacKeyGenParams | EcKeyGenParams {
+	private static generateKeyParameters(algorithm: string, options?: { hash?: string; namedCurve?: string; modulusLength?: number }): AesKeyGenParams | RsaHashedKeyGenParams | HmacKeyGenParams | EcKeyGenParams {
 		switch (algorithm) {
 			case Krypton.Algorithm.AES_CTR:
 			case Krypton.Algorithm.AES_CBC:
 			case Krypton.Algorithm.AES_GCM: return { name: algorithm, length: 256 };
-			case Krypton.Algorithm.RSA_OAEP: return { name: algorithm, modulusLength: 4096, publicExponent: new Uint8Array([1, 0, 1]), hash: options?.hash ?? Krypton.Hash.SHA_512 };
+			case Krypton.Algorithm.RSA_OAEP: return { name: algorithm, modulusLength: options?.modulusLength ?? 4096, publicExponent: new Uint8Array([1, 0, 1]), hash: options?.hash ?? Krypton.Hash.SHA_512 };
 			case Krypton.Algorithm.HMAC: return { name: algorithm, hash: options?.hash ?? Krypton.Hash.SHA_256 };
 			case Krypton.Algorithm.ECDSA: return { name: algorithm, namedCurve: options?.namedCurve ?? 'P-256' };
 			case Krypton.Algorithm.ECDH: return { name: algorithm, namedCurve: options?.namedCurve ?? 'P-256' };
