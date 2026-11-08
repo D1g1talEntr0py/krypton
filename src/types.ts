@@ -19,6 +19,7 @@ export type EcdhNamedCurve = NamedCurve;
 export interface EncryptionCipher {
 	encrypt: (data: string | BufferSource) => Promise<ArrayBuffer>;
 	decrypt: (data: BufferSource) => Promise<string>;
+	decryptBytes: (data: BufferSource) => Promise<ArrayBuffer>;
 }
 
 /**

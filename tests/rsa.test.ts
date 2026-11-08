@@ -55,6 +55,15 @@ describe('RsaCipher', () => {
 			expect(decrypted).toEqual(data);
 		});
 
+		it('should decrypt arbitrary binary plaintext without UTF-8 conversion', async () => {
+			const rsa = await Krypton.create('RSA-OAEP');
+			const data = new Uint8Array([0, 0xff, 0xc3, 0x28, 0x80, 0, 0xfe]);
+			const encrypted = await rsa.encrypt(data);
+			const decrypted = await rsa.decryptBytes(encrypted);
+
+			expect(new Uint8Array(decrypted)).toEqual(data);
+		});
+
 		it('should encrypt and decrypt an empty string', async () => {
 			const rsa = await Krypton.create('RSA-OAEP');
 			const encrypted = await rsa.encrypt('');

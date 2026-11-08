@@ -37,6 +37,13 @@ const decrypted = await aes.decrypt(encrypted);
 console.log(decrypted); // Hello World!
 ```
 
+For arbitrary binary plaintext (including invalid UTF-8), use `decryptBytes`:
+```typescript
+const binary = new Uint8Array([0, 0xff, 0xc3, 0x28]);
+const encryptedBytes = await aes.encrypt(binary);
+const decryptedBytes = new Uint8Array(await aes.decryptBytes(encryptedBytes));
+```
+
 **Supported algorithms:** `AES-GCM` (recommended), `AES-CBC`, `AES-CTR`
 
 ```typescript
@@ -151,6 +158,19 @@ const jwk = await Krypton.exportKey(key, 'jwk');
 const imported = await Krypton.importKey(jwk);
 ```
 
+`decrypt` continues to return a UTF-8 string for compatibility. Use `Krypton.decryptBytes(parameters, key, ciphertext)`, `aes.decryptBytes(ciphertext)`, or `rsa.decryptBytes(ciphertext)` to receive the original plaintext bytes as an `ArrayBuffer`.
+
+Key usages default by algorithm: AES and RSA generation retain `encrypt`/`decrypt`; HMAC and ECDSA use `sign`/`verify`; ECDH uses `deriveKey`/`deriveBits`. Explicit `usages` always override these defaults. Key import defaults to AES `encrypt`/`decrypt` and HMAC `sign`/`verify`. For RSA-OAEP, ECDSA, and ECDH imports, always provide `usages` explicitly because valid usages depend on whether the imported key is public or private (ECDH public keys use an empty array).
+
+```typescript
+const ecdhPublicKey = await Krypton.importKey(
+  peerPublicJwk,
+  Krypton.Algorithm.ECDH,
+  Krypton.KeyFormat.JWK,
+  { usages: [], namedCurve: 'P-256' }
+);
+```
+
 #### Key Wrapping
 ```typescript
 const keyToWrap = await Krypton.generateKey() as CryptoKey;
@@ -170,12 +190,13 @@ const unwrapped = await Krypton.unwrapKey('raw', wrapped, wrappingKey, wrapParam
 | `encode(data)` | Encodes a string to `Uint8Array` |
 | `decode(data)` | Decodes a `BufferSource` to string |
 | `randomUUID()` | Generates a random UUID |
-| `randomValues(size?)` | Generates cryptographic random values (default 128 bits) |
-| `generateKey(algorithm?, options?)` | Generates a `CryptoKey` or `CryptoKeyPair` |
+| `randomValues(size?)` | Generates cryptographic random values (default 128 bits; positive whole-byte sizes up to 524,288 bits) |
+| `generateKey(algorithm?, options?)` | Generates a `CryptoKey` or `CryptoKeyPair` with algorithm-specific default usages (or explicit `options.usages`) |
 | `exportKey(key, format?)` | Exports a `CryptoKey` to JWK, raw, SPKI, or PKCS8 |
-| `importKey(key, algorithm?, format?, options?)` | Imports a key from JWK or binary format |
+| `importKey(key, algorithm?, format?, options?)` | Imports a key from JWK or binary format; RSA-OAEP, ECDSA, and ECDH require explicit usages |
 | `encrypt(params, key, data)` | Encrypts data (string or `BufferSource`) |
-| `decrypt(params, key, data)` | Decrypts data to a string |
+| `decrypt(params, key, data)` | Decrypts data to a UTF-8 string |
+| `decryptBytes(params, key, data)` | Decrypts data to an `ArrayBuffer`, preserving arbitrary plaintext bytes |
 | `generateParameters(algorithm?, options?)` | Generates algorithm parameters with random IV/nonce |
 | `digest(algorithm?, data)` | Computes a hash (SHA-1, SHA-256, SHA-384, SHA-512) |
 | `sign(algorithm, key, data)` | Signs data with HMAC or ECDSA |
@@ -192,6 +213,7 @@ const unwrapped = await Krypton.unwrapKey('raw', wrapped, wrappingKey, wrapParam
 | `AesCipher.create(algorithm, key?)` | Creates a new instance, optionally from an existing `CryptoKey` or `JsonWebKey` |
 | `encrypt(data, additionalData?)` | Encrypts data (fresh IV per call, prepended to output) |
 | `decrypt(data, additionalData?)` | Decrypts data (IV extracted automatically) |
+| `decryptBytes(data, additionalData?)` | Decrypts data to an `ArrayBuffer` without UTF-8 decoding |
 | `exportKey(format?)` | Exports the instance's key |
 
 #### `RsaCipher`
@@ -201,6 +223,7 @@ const unwrapped = await Krypton.unwrapKey('raw', wrapped, wrappingKey, wrapParam
 | `RsaCipher.create(options?)` | Creates from generated or existing keys (`keyPair`, `publicKey`/`privateKey`, `hash`) |
 | `encrypt(data, label?)` | Encrypts data using the public key |
 | `decrypt(data, label?)` | Decrypts data using the private key |
+| `decryptBytes(data, label?)` | Decrypts data to an `ArrayBuffer` without UTF-8 decoding |
 | `exportPublicKey(format?)` | Exports the public key |
 | `exportPrivateKey(format?)` | Exports the private key |
 

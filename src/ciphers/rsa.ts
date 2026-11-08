@@ -90,9 +90,20 @@ export class RsaCipher implements EncryptionCipher {
 	 * @returns The decrypted data as a string
 	 */
 	async decrypt(data: BufferSource, label?: BufferSource): Promise<string> {
+		return Krypton.decode(await this.decryptBytes(data, label));
+	}
+
+	/**
+	 * Decrypts data without interpreting the plaintext as UTF-8
+	 *
+	 * @param data - The data to decrypt
+	 * @param label - Optional label for OAEP (must match the label used during encryption)
+	 * @returns The decrypted bytes as an ArrayBuffer
+	 */
+	async decryptBytes(data: BufferSource, label?: BufferSource): Promise<ArrayBuffer> {
 		const params: RsaOaepParams = { name: Krypton.Algorithm.RSA_OAEP };
 		if (label) { params.label = label }
 
-		return await Krypton.decrypt(params, this.privateKey, data);
+		return await Krypton.decryptBytes(params, this.privateKey, data);
 	}
 }

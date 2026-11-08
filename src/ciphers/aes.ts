@@ -93,11 +93,26 @@ export class AesCipher implements EncryptionCipher {
 	 * @throws {Error} If the decryption fails
 	 */
 	async decrypt(data: BufferSource, additionalData?: BufferSource): Promise<string> {
-		const dataBytes = data instanceof ArrayBuffer	? new Uint8Array(data) : new Uint8Array((data as ArrayBufferView).buffer, (data as ArrayBufferView).byteOffset, (data as ArrayBufferView).byteLength);
+		return Krypton.decode(await this.decryptBytes(data, additionalData));
+	}
+
+	/**
+	 * Decrypts data without interpreting the plaintext as UTF-8.
+	 * Expects the IV to be prepended to the ciphertext (as produced by {@link encrypt}).
+	 *
+	 * @param data - The data to decrypt (with IV prepended)
+	 * @param additionalData - Optional additional authenticated data (only for GCM mode)
+	 * @returns The decrypted bytes as an ArrayBuffer
+	 * @throws {Error} If the decryption fails
+	 */
+	async decryptBytes(data: BufferSource, additionalData?: BufferSource): Promise<ArrayBuffer> {
+		const dataBytes = ArrayBuffer.isView(data)
+			? new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
+			: new Uint8Array(data);
 		const ivLength = AesCipher.getIvLength(this.mode);
 		const parameters = AesCipher.rebuildParameters(this.algorithm, this.mode, dataBytes.slice(0, ivLength), additionalData);
 
-		return await Krypton.decrypt(parameters, this.key, dataBytes.slice(ivLength));
+		return await Krypton.decryptBytes(parameters, this.key, dataBytes.slice(ivLength));
 	}
 
 	/**

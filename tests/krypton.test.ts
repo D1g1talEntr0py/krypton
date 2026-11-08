@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { runInNewContext } from 'node:vm';
 import { Krypton } from '../src/krypton.js';
 import { AesCipher } from '../src/ciphers/aes.js';
 
@@ -61,13 +62,19 @@ describe('Krypton', () => {
 			expect(values.byteLength).toBe(1);
 		});
 
+		it('should accept the maximum Web Crypto request size', () => {
+			const values = Krypton.randomValues(524288);
+			expect(values).toBeInstanceOf(Uint32Array);
+			expect(values.byteLength).toBe(65536);
+		});
+
 		it('should generate 96-bit values for GCM IV', () => {
 			const values = Krypton.randomValues(96);
 			expect(values.byteLength).toBe(12);
 		});
 
-		it('should throw for invalid sizes', () => {
-			expect(() => Krypton.randomValues(7)).toThrow('Invalid size');
+		it.each([0, -8, 7, 9, 8.5, 524296])('should reject invalid size %s before allocation', (size) => {
+			expect(() => Krypton.randomValues(size)).toThrow('positive integer divisible by 8');
 		});
 	});
 
@@ -95,8 +102,24 @@ describe('Krypton', () => {
 		});
 
 		it('should generate an HMAC key', async () => {
-			const key = await Krypton.generateKey(Krypton.Algorithm.HMAC, { usages: ['sign', 'verify'] });
-			expect((key as CryptoKey).algorithm.name).toBe('HMAC');
+			const key = await Krypton.generateKey(Krypton.Algorithm.HMAC) as CryptoKey;
+			expect(key.algorithm.name).toBe('HMAC');
+			expect(key.usages).toEqual(['sign', 'verify']);
+		});
+
+		it('should generate algorithm-appropriate ECDSA and ECDH key usages', async () => {
+			const ecdsa = await Krypton.generateKey(Krypton.Algorithm.ECDSA) as CryptoKeyPair;
+			expect(ecdsa.privateKey.usages).toEqual(['sign']);
+			expect(ecdsa.publicKey.usages).toEqual(['verify']);
+
+			const ecdh = await Krypton.generateKey(Krypton.Algorithm.ECDH) as CryptoKeyPair;
+			expect(ecdh.privateKey.usages).toEqual(['deriveKey', 'deriveBits']);
+			expect(ecdh.publicKey.usages).toEqual([]);
+		});
+
+		it('should allow explicit usages to override algorithm defaults', async () => {
+			const key = await Krypton.generateKey(Krypton.Algorithm.HMAC, { usages: ['sign'] }) as CryptoKey;
+			expect(key.usages).toEqual(['sign']);
 		});
 
 		it('should respect extractable option', async () => {
@@ -125,6 +148,31 @@ describe('Krypton', () => {
 			expect(exported.byteLength).toBe(32); // 256-bit key
 			const imported = await Krypton.importKey(exported, Krypton.Algorithm.AES_GCM, Krypton.KeyFormat.RAW);
 			expect(imported.algorithm.name).toBe('AES-GCM');
+		});
+
+		it('should apply safe HMAC import defaults', async () => {
+			const key = await Krypton.generateKey(Krypton.Algorithm.HMAC) as CryptoKey;
+			const jwk = await Krypton.exportKey(key);
+			const imported = await Krypton.importKey(jwk, Krypton.Algorithm.HMAC);
+
+			expect(imported.usages).toEqual(['sign', 'verify']);
+		});
+
+		it.each([Krypton.Algorithm.RSA_OAEP, Krypton.Algorithm.ECDSA, Krypton.Algorithm.ECDH])(
+			'should require explicit usages when importing %s keys',
+			async (algorithm) => {
+				await expect(Krypton.importKey({} as JsonWebKey, algorithm)).rejects.toThrow(
+					`Explicit usages are required when importing ${algorithm} keys`
+				);
+			}
+		);
+
+		it('should import an ECDH public key when explicit usages are provided', async () => {
+			const keyPair = await Krypton.generateKey(Krypton.Algorithm.ECDH) as CryptoKeyPair;
+			const publicJwk = await Krypton.exportKey(keyPair.publicKey);
+			const imported = await Krypton.importKey(publicJwk, Krypton.Algorithm.ECDH, 'jwk', { usages: [] });
+
+			expect(imported.usages).toEqual([]);
 		});
 
 		it('should encrypt with original key and decrypt with imported key', async () => {
@@ -209,6 +257,16 @@ describe('Krypton', () => {
 			expect(decrypted).toEqual(data);
 		});
 
+		it('should decrypt arbitrary binary plaintext without UTF-8 conversion', async () => {
+			const data = new Uint8Array([0, 0xff, 0xc3, 0x28, 0x80, 0, 0xfe]);
+			const key = await Krypton.generateKey() as CryptoKey;
+			const parameters = Krypton.generateParameters();
+			const encrypted = await Krypton.encrypt(parameters, key, data);
+			const decrypted = await Krypton.decryptBytes(parameters, key, encrypted);
+
+			expect(new Uint8Array(decrypted)).toEqual(data);
+		});
+
 		it('should encrypt and decrypt large data', async () => {
 			const data = 'A'.repeat(1024 * 1024); // 1MB
 			const key = await Krypton.generateKey() as CryptoKey;
@@ -227,6 +285,16 @@ describe('Krypton', () => {
 			const encrypted = await Krypton.encrypt(params, keyPair.publicKey, data);
 			const decrypted = await Krypton.decrypt(params, keyPair.privateKey, encrypted);
 			expect(decrypted).toEqual(data);
+		});
+
+		it('should decrypt arbitrary binary plaintext without UTF-8 conversion', async () => {
+			const keyPair = await Krypton.generateKey(Krypton.Algorithm.RSA_OAEP) as CryptoKeyPair;
+			const parameters = Krypton.generateParameters(Krypton.Algorithm.RSA_OAEP);
+			const data = new Uint8Array([0, 0xff, 0xc3, 0x28, 0x80, 0, 0xfe]);
+			const encrypted = await Krypton.encrypt(parameters, keyPair.publicKey, data);
+			const decrypted = await Krypton.decryptBytes(parameters, keyPair.privateKey, encrypted);
+
+			expect(new Uint8Array(decrypted)).toEqual(data);
 		});
 
 		it('should generate correct parameters for RSA-OAEP', () => {
@@ -458,6 +526,25 @@ describe('Krypton.create (AES)', () => {
 			const decrypted = await aes.decrypt(encrypted);
 			expect(encrypted).toBeInstanceOf(ArrayBuffer);
 			expect(decrypted).toEqual(data);
+		});
+
+		it('should decrypt binary data from foreign-realm ArrayBuffers and offset views', async () => {
+			const data = new Uint8Array([0, 0xff, 0xc3, 0x28, 0x80, 0, 0xfe]);
+			const aes = await Krypton.create('AES-GCM');
+			const encrypted = await aes.encrypt(data);
+			const encryptedBytes = new Uint8Array(encrypted);
+			const foreignBuffer = runInNewContext('new Uint8Array(bytes).buffer', {
+				bytes: [...encryptedBytes]
+			}) as ArrayBuffer;
+			const foreignView = runInNewContext('new Uint8Array(buffer, offset, length)', {
+				buffer: runInNewContext('new Uint8Array(bytes).buffer', { bytes: [9, 9, ...encryptedBytes, 9] }) as ArrayBuffer,
+				offset: 2,
+				length: encrypted.byteLength
+			}) as Uint8Array<ArrayBuffer>;
+
+			expect(new Uint8Array(await aes.decryptBytes(foreignBuffer))).toEqual(data);
+			expect(new Uint8Array(await aes.decryptBytes(foreignView))).toEqual(data);
+			expect(await aes.decrypt(foreignView)).toBe(Krypton.decode(data));
 		});
 
 		it('should encrypt and decrypt using AES-CBC', async () => {

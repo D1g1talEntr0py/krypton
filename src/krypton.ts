@@ -103,13 +103,17 @@ export class Krypton {
 	}
 
 	/**
-	 * Generates a random value of the specified size in bits (default: 128)
+	 * Generates a random value of the specified size in bits (default: 128; maximum: 524288)
 	 *
 	 * @param size - The size of the random value in bits (default: 128)
 	 * @returns A typed array containing the random values
-	 * @throws {Error} If the size is invalid
+	 * @throws {Error} If size is not a positive whole-byte integer within Web Crypto's 65536-byte limit
 	 */
 	static randomValues(size: number = 128): Uint32Array<ArrayBuffer> | Uint16Array<ArrayBuffer> | Uint8Array<ArrayBuffer> {
+		if (!Number.isInteger(size) || size <= 0 || size > 524288 || size % 8 !== 0) {
+			throw new Error(`Invalid size ${size}: must be a positive integer divisible by 8 and no greater than 524288 bits`);
+		}
+
 		const typedArray = Krypton.createTypedArray(size);
 		return crypto.getRandomValues(typedArray);
 	}
@@ -118,11 +122,14 @@ export class Krypton {
 	 * Generates a cryptographic key for the specified algorithm (default: AES-GCM)
 	 *
 	 * @param algorithm - The algorithm to generate the key for (default: AES-GCM)
-	 * @param options - Additional options for key generation
+	 * @param options - Additional options for key generation. If usages are omitted, defaults are selected by algorithm.
 	 * @returns A promise that resolves to the generated key
 	 * @throws {Error} If the algorithm is not supported
 	 */
-	static async generateKey(algorithm: string = Krypton.Algorithm.AES_GCM, { extractable = true, usages = [Krypton.KeyUsage.encrypt, Krypton.KeyUsage.decrypt], hash, namedCurve, modulusLength }: { extractable?: boolean; usages?: KeyUsage[]; hash?: string; namedCurve?: string; modulusLength?: number } = {}): Promise<CryptoKey | CryptoKeyPair> {
+	static async generateKey(algorithm: string = Krypton.Algorithm.AES_GCM, options: { extractable?: boolean; usages?: KeyUsage[]; hash?: string; namedCurve?: string; modulusLength?: number } = {}): Promise<CryptoKey | CryptoKeyPair> {
+		const { extractable = true, hash, namedCurve, modulusLength } = options;
+		const usages = options.usages ?? Krypton.defaultKeyUsages(algorithm);
+
 		return await crypto.subtle.generateKey(Krypton.generateKeyParameters(algorithm, { hash, namedCurve, modulusLength }), extractable, usages);
 	}
 
@@ -165,11 +172,13 @@ export class Krypton {
 	 * @param key - The key to import
 	 * @param algorithm - The algorithm to use for the imported key (default: AES-GCM)
 	 * @param format - The format of the key being imported (default: JWK)
-	 * @param options - Additional options for key import
+	 * @param options - Additional options for key import. RSA-OAEP, ECDSA, and ECDH require explicit usages.
 	 * @returns A promise that resolves to the imported key
-	 * @throws {Error} If the format is not supported
+	 * @throws {Error} If the format is not supported or asymmetric-key usages are omitted
 	 */
-	static async importKey(key: JsonWebKey | BufferSource, algorithm: string = Krypton.Algorithm.AES_GCM, format: KeyFormat = Krypton.KeyFormat.JWK, { extractable = true, usages = [Krypton.KeyUsage.encrypt, Krypton.KeyUsage.decrypt], hash, namedCurve }: { extractable?: boolean; usages?: KeyUsage[]; hash?: string; namedCurve?: string } = {}): Promise<CryptoKey> {
+	static async importKey(key: JsonWebKey | BufferSource, algorithm: string = Krypton.Algorithm.AES_GCM, format: KeyFormat = Krypton.KeyFormat.JWK, options: { extractable?: boolean; usages?: KeyUsage[]; hash?: string; namedCurve?: string } = {}): Promise<CryptoKey> {
+		const { extractable = true, hash, namedCurve } = options;
+		const usages = options.usages ?? Krypton.defaultImportKeyUsages(algorithm);
 		const keyParams = Krypton.generateKeyParameters(algorithm, { hash, namedCurve });
 
 		if (format === Krypton.KeyFormat.JWK) {
@@ -203,7 +212,20 @@ export class Krypton {
 	 * @throws {Error} If the decryption fails
 	 */
 	static async decrypt(parameters: AesCtrParams | AesCbcParams | AesGcmParams | RsaOaepParams, key: CryptoKey, data: BufferSource): Promise<string> {
-		return Krypton.textDecoder.decode(await crypto.subtle.decrypt(parameters, key, data));
+		return Krypton.textDecoder.decode(await Krypton.decryptBytes(parameters, key, data));
+	}
+
+	/**
+	 * Decrypts data without interpreting the plaintext as UTF-8.
+	 *
+	 * @param parameters - The parameters to use for decryption
+	 * @param key - The key to use for decryption
+	 * @param data - The data to decrypt
+	 * @returns A promise that resolves to the decrypted bytes as an ArrayBuffer
+	 * @throws {Error} If the decryption fails
+	 */
+	static async decryptBytes(parameters: AesCtrParams | AesCbcParams | AesGcmParams | RsaOaepParams, key: CryptoKey, data: BufferSource): Promise<ArrayBuffer> {
+		return await crypto.subtle.decrypt(parameters, key, data);
 	}
 
 	/**
@@ -250,6 +272,47 @@ export class Krypton {
 			case size % 16 === 0: return new Uint16Array(size / 16);
 			case size % 8 === 0: return new Uint8Array(size / 8);
 			default: throw new Error(`Invalid size ${size}`);
+		}
+	}
+
+	/**
+	 * Returns the default usages for key generation, preserving the legacy AES/RSA defaults.
+	 *
+	 * @param algorithm - The key algorithm
+	 * @returns The algorithm-appropriate key usages
+	 */
+	private static defaultKeyUsages(algorithm: string): KeyUsage[] {
+		switch (algorithm) {
+			case Krypton.Algorithm.AES_CBC:
+			case Krypton.Algorithm.AES_CTR:
+			case Krypton.Algorithm.AES_GCM:
+			case Krypton.Algorithm.RSA_OAEP: return [Krypton.KeyUsage.encrypt, Krypton.KeyUsage.decrypt];
+			case Krypton.Algorithm.HMAC:
+			case Krypton.Algorithm.ECDSA: return [Krypton.KeyUsage.sign, Krypton.KeyUsage.verify];
+			case Krypton.Algorithm.ECDH: return [Krypton.KeyUsage.deriveKey, Krypton.KeyUsage.deriveBits];
+			default: return [Krypton.KeyUsage.encrypt, Krypton.KeyUsage.decrypt];
+		}
+	}
+
+	/**
+	 * Returns safe defaults for key import, rejecting asymmetric algorithms whose
+	 * valid usages depend on whether the imported key is public or private.
+	 *
+	 * @param algorithm - The key algorithm
+	 * @returns The algorithm-appropriate key usages
+	 * @throws {Error} If usages must be specified for an asymmetric key
+	 */
+	private static defaultImportKeyUsages(algorithm: string): KeyUsage[] {
+		switch (algorithm) {
+			case Krypton.Algorithm.AES_CBC:
+			case Krypton.Algorithm.AES_CTR:
+			case Krypton.Algorithm.AES_GCM: return [Krypton.KeyUsage.encrypt, Krypton.KeyUsage.decrypt];
+			case Krypton.Algorithm.HMAC: return [Krypton.KeyUsage.sign, Krypton.KeyUsage.verify];
+			case Krypton.Algorithm.RSA_OAEP:
+			case Krypton.Algorithm.ECDSA:
+			case Krypton.Algorithm.ECDH:
+				throw new Error(`Explicit usages are required when importing ${algorithm} keys; valid usages depend on whether the key is public or private`);
+			default: return [Krypton.KeyUsage.encrypt, Krypton.KeyUsage.decrypt];
 		}
 	}
 
