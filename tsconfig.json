@@ -1,18 +1,22 @@
 {
+	"$schema": "https://json.schemastore.org/tsbuild.json",
 	"compilerOptions": {
 		"sourceMap": true,
 		"declaration": true,
 		"isolatedDeclarations": true,
-		"isolatedModules": true,
+		"verbatimModuleSyntax": true,
+		"forceConsistentCasingInFileNames": true,
 		"allowUnusedLabels": false,
 		"allowUnreachableCode": false,
 		"noImplicitOverride": true,
 		"noImplicitReturns": true,
-		"stableTypeOrdering": true,
 		"noUncheckedIndexedAccess": true,
 		"rootDir": "./src",
-		"lib": [ "esnext", "dom" ],
+		"lib": [ "ES2022", "DOM" ],
 		"module": "preserve"
 	},
-	"include": [ "./src" ]
+	"include": [ "./src/**/*" ],
+	"tsbuild": {
+		"bundle": false
+	}
 }

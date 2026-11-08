@@ -10,7 +10,7 @@ export default defineConfig({
 		coverage: {
 			reportsDirectory: './tests/coverage',
 			include: ['src/**/*.ts'],
-			exclude: [ 'src/types.ts', 'src/index.ts', 'src/ciphers/index.ts' ]
+			exclude: [ 'src/types.ts' ]
 		}
 	}
 });
