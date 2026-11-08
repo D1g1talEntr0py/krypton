@@ -136,12 +136,15 @@ export class AesCipher implements EncryptionCipher {
 	 * @throws {Error} If the mode is not supported
 	 */
 	private static generateParameters(algorithm: AesAlgorithm, mode: AesMode, additionalData?: BufferSource): AesCtrParams | AesCbcParams | AesGcmParams {
+		if (mode !== AesCipher.Mode.GCM && additionalData !== undefined) { throw new Error('additionalData is only supported with AES-GCM') }
+
 		switch (mode) {
 			case AesCipher.Mode.CTR: return { name: algorithm, counter: Krypton.randomValues(), length: 128 };
 			case AesCipher.Mode.CBC: return { name: algorithm, iv: Krypton.randomValues() };
 			case AesCipher.Mode.GCM: {
 				const params: AesGcmParams = { name: algorithm, iv: Krypton.randomValues(96), tagLength: 128 };
-				if (additionalData) { params.additionalData = additionalData }
+
+				if (additionalData !== undefined) { params.additionalData = additionalData }
 
 				return params;
 			}
@@ -158,12 +161,15 @@ export class AesCipher implements EncryptionCipher {
 	 * @returns The parameters for decryption
 	 */
 	private static rebuildParameters(algorithm: AesAlgorithm, mode: AesMode, iv: Uint8Array<ArrayBuffer>, additionalData?: BufferSource): AesCtrParams | AesCbcParams | AesGcmParams {
+		if (mode !== AesCipher.Mode.GCM && additionalData !== undefined) { throw new Error('additionalData is only supported with AES-GCM') }
+
 		switch (mode) {
 			case AesCipher.Mode.CTR: return { name: algorithm, counter: iv, length: 128 };
 			case AesCipher.Mode.CBC: return { name: algorithm, iv };
 			case AesCipher.Mode.GCM: {
 				const params: AesGcmParams = { name: algorithm, iv, tagLength: 128 };
-				if (additionalData) { params.additionalData = additionalData }
+
+				if (additionalData !== undefined) { params.additionalData = additionalData }
 
 				return params;
 			}

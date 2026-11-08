@@ -34,6 +34,8 @@ describe('EcdhCipher', () => {
 			const aliceExported = await Krypton.exportKey(aliceSharedKey, 'raw');
 			const bobExported = await Krypton.exportKey(bobSharedKey, 'raw');
 			expect(new Uint8Array(aliceExported)).toEqual(new Uint8Array(bobExported));
+			expect(aliceSharedKey.usages).toEqual(['encrypt', 'decrypt']);
+			expect(aliceSharedKey.extractable).toBe(true);
 		});
 
 		it('should derive a key usable for encryption', async () => {
@@ -57,15 +59,31 @@ describe('EcdhCipher', () => {
 			expect(decrypted).toEqual(data);
 		});
 
-		it('should derive an HMAC key', async () => {
+		it('should derive an HMAC key with default sign and verify usages', async () => {
 			const alice = await Krypton.create('ECDH');
 			const bob = await Krypton.create('ECDH');
 
 			const bobPublicJwk = await bob.exportPublicKey();
 			const bobPublicKey = await crypto.subtle.importKey('jwk', bobPublicJwk, { name: 'ECDH', namedCurve: 'P-256' }, true, []);
 
-			const hmacKey = await alice.deriveKey(bobPublicKey, { name: 'HMAC', hash: 'SHA-256', length: 256 }, { usages: ['sign', 'verify'] });
+			const hmacKey = await alice.deriveKey(bobPublicKey, { name: 'HMAC', hash: 'SHA-256', length: 256 });
 			expect(hmacKey.algorithm.name).toBe('HMAC');
+			expect(hmacKey.usages).toEqual(['sign', 'verify']);
+			expect(hmacKey.extractable).toBe(true);
+
+			const signature = await crypto.subtle.sign('HMAC', hmacKey, Krypton.encode('test'));
+			expect(await crypto.subtle.verify('HMAC', hmacKey, signature, Krypton.encode('test'))).toBe(true);
+		});
+
+		it('should preserve explicitly supplied usages and extractability', async () => {
+			const alice = await Krypton.create('ECDH');
+			const bob = await Krypton.create('ECDH');
+			const bobPublicJwk = await bob.exportPublicKey();
+			const bobPublicKey = await crypto.subtle.importKey('jwk', bobPublicJwk, { name: 'ECDH', namedCurve: 'P-256' }, true, []);
+
+			const key = await alice.deriveKey(bobPublicKey, { name: 'HMAC', hash: 'SHA-256', length: 256 }, { extractable: false, usages: ['sign'] });
+			expect(key.usages).toEqual(['sign']);
+			expect(key.extractable).toBe(false);
 		});
 	});
 

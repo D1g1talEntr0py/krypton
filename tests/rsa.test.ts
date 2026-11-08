@@ -28,6 +28,13 @@ describe('RsaCipher', () => {
 			const rsa = await RsaCipher.create({ publicKey: keyPair.publicKey, privateKey: keyPair.privateKey });
 			expect(rsa).toBeInstanceOf(RsaCipher);
 		});
+
+		it('should reject an incomplete public and private key pair', async () => {
+			const keyPair = await Krypton.generateKey(Krypton.Algorithm.RSA_OAEP) as CryptoKeyPair;
+
+			await expect(RsaCipher.create({ publicKey: keyPair.publicKey })).rejects.toThrow('Both publicKey and privateKey must be provided');
+			await expect(RsaCipher.create({ privateKey: keyPair.privateKey })).rejects.toThrow('Both publicKey and privateKey must be provided');
+		});
 	});
 
 	describe('encrypt / decrypt', () => {

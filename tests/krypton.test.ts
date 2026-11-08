@@ -259,7 +259,11 @@ describe('Krypton', () => {
 		it('should include additionalData for AES-GCM when provided', () => {
 			const aad = Krypton.encode('additional data');
 			const params = Krypton.generateParameters(Krypton.Algorithm.AES_GCM, { additionalData: aad }) as AesGcmParams;
-			expect(params.additionalData).toBeDefined();
+			expect(params.additionalData).toBe(aad);
+		});
+
+		it.each([Krypton.Algorithm.AES_CBC, Krypton.Algorithm.AES_CTR])('should reject additionalData for %s', (algorithm) => {
+			expect(() => Krypton.generateParameters(algorithm, { additionalData: new Uint8Array() })).toThrow('additionalData is only supported with AES-GCM');
 		});
 
 		it('should throw for unsupported algorithm', () => {
@@ -472,6 +476,15 @@ describe('Krypton.create (AES)', () => {
 			const decrypted = await aes.decrypt(encrypted);
 			expect(encrypted).toBeInstanceOf(ArrayBuffer);
 			expect(decrypted).toEqual(data);
+		});
+
+		it.each(['AES-CBC', 'AES-CTR'] as const)('should reject additionalData for %s encryption and decryption', async (algorithm) => {
+			const aes = await Krypton.create(algorithm);
+			const encrypted = await aes.encrypt('test');
+			const additionalData = new Uint8Array();
+
+			await expect(aes.encrypt('test', additionalData)).rejects.toThrow('additionalData is only supported with AES-GCM');
+			await expect(aes.decrypt(encrypted, additionalData)).rejects.toThrow('additionalData is only supported with AES-GCM');
 		});
 	});
 

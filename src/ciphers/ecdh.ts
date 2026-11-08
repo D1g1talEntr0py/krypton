@@ -67,8 +67,10 @@ export class EcdhCipher {
 	 * @param options - Additional options for the derived key
 	 * @returns A promise that resolves to the derived CryptoKey
 	 */
-	async deriveKey(otherPartyPublicKey: CryptoKey, derivedKeyAlgorithm: AesKeyGenParams | HmacKeyGenParams = { name: Krypton.Algorithm.AES_GCM, length: 256 }, { extractable = true, usages = ['encrypt', 'decrypt'] as KeyUsage[] }: { extractable?: boolean; usages?: KeyUsage[] } = {}): Promise<CryptoKey> {
-		return await crypto.subtle.deriveKey({ name: Krypton.Algorithm.ECDH, public: otherPartyPublicKey }, this.privateKey, derivedKeyAlgorithm, extractable, usages);
+	async deriveKey(otherPartyPublicKey: CryptoKey, derivedKeyAlgorithm: AesKeyGenParams | HmacKeyGenParams = { name: Krypton.Algorithm.AES_GCM, length: 256 }, options: { extractable?: boolean; usages?: KeyUsage[] } = {}): Promise<CryptoKey> {
+		const usages = options.usages ?? (derivedKeyAlgorithm.name === Krypton.Algorithm.HMAC ? ['sign', 'verify'] : ['encrypt', 'decrypt']);
+
+		return await crypto.subtle.deriveKey({ name: Krypton.Algorithm.ECDH, public: otherPartyPublicKey }, this.privateKey, derivedKeyAlgorithm, options.extractable ?? true, usages);
 	}
 
 	/**

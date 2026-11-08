@@ -37,6 +37,8 @@ export class RsaCipher implements EncryptionCipher {
 			return new RsaCipher(options.publicKey, options.privateKey);
 		}
 
+		if (options?.publicKey || options?.privateKey) { throw new Error('Both publicKey and privateKey must be provided') }
+
 		const keyPair = await Krypton.generateKey(Krypton.Algorithm.RSA_OAEP, {
 			usages: ['encrypt', 'decrypt'],
 			hash: options?.hash,

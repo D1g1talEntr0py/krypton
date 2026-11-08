@@ -15,9 +15,7 @@ import type { AesAlgorithm } from './types.js';
 export type { AesCipher, RsaCipher, HmacCipher, EcdsaCipher, EcdhCipher, AesAlgorithm };
 export type { AesMode, HashAlgorithm, NamedCurve, CipherAlgorithm, RsaHashAlgorithm, HmacHashAlgorithm, EcdsaHashAlgorithm, EcdsaNamedCurve, EcdhNamedCurve, EncryptionCipher, SigningCipher, TypedArray } from './types.js';
 
-export type CipherMap = {
-	[K in AesAlgorithm]: AesCipher;
-} & {
+export type CipherMap = { [K in AesAlgorithm]: AesCipher } & {
 	'RSA-OAEP': RsaCipher;
 	'HMAC': HmacCipher;
 	'ECDSA': EcdsaCipher;
@@ -218,11 +216,19 @@ export class Krypton {
 	 */
 	static generateParameters(algorithm: string = Krypton.Algorithm.AES_GCM, options?: { additionalData?: BufferSource }): AesCtrParams | AesCbcParams | AesGcmParams | RsaOaepParams {
 		switch (algorithm) {
-			case Krypton.Algorithm.AES_CTR: return { name: algorithm, counter: Krypton.randomValues(), length: 128 };
-			case Krypton.Algorithm.AES_CBC: return { name: algorithm, iv: Krypton.randomValues() };
+			case Krypton.Algorithm.AES_CTR:
+			case Krypton.Algorithm.AES_CBC: {
+				if (options?.additionalData !== undefined) {
+					throw new Error('additionalData is only supported with AES-GCM');
+				}
+
+				return algorithm === Krypton.Algorithm.AES_CTR
+					? { name: algorithm, counter: Krypton.randomValues(), length: 128 }
+					: { name: algorithm, iv: Krypton.randomValues() };
+			}
 			case Krypton.Algorithm.AES_GCM: {
 				const params: AesGcmParams = { name: algorithm, iv: Krypton.randomValues(96), tagLength: 128 };
-				if (options?.additionalData) { params.additionalData = options.additionalData }
+				if (options?.additionalData !== undefined) { params.additionalData = options.additionalData }
 
 				return params;
 			}
