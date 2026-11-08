@@ -45,7 +45,7 @@ describe('HmacCipher', () => {
 			const data = 'test data';
 			const signature = await hmac.sign(data);
 			const tampered = new Uint8Array(signature);
-			tampered[0] ^= 0xff;
+			tampered[0] = (tampered[0] ?? 0) ^ 0xff;
 			const isValid = await hmac.verify(tampered.buffer, data);
 			expect(isValid).toBe(false);
 		});

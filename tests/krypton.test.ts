@@ -175,6 +175,60 @@ describe('Krypton', () => {
 			expect(imported.usages).toEqual([]);
 		});
 
+		it.each([
+			{
+				algorithm: Krypton.Algorithm.RSA_OAEP,
+				publicUsages: ['encrypt'] as KeyUsage[],
+				privateUsages: ['decrypt'] as KeyUsage[]
+			},
+			{
+				algorithm: Krypton.Algorithm.ECDSA,
+				publicUsages: ['verify'] as KeyUsage[],
+				privateUsages: ['sign'] as KeyUsage[]
+			},
+			{
+				algorithm: Krypton.Algorithm.ECDH,
+				publicUsages: [] as KeyUsage[],
+				privateUsages: ['deriveKey', 'deriveBits'] as KeyUsage[]
+			}
+		])('should import valid $algorithm public and private keys in supported formats', async ({ algorithm, publicUsages, privateUsages }) => {
+			const keyPair = await Krypton.generateKey(algorithm) as CryptoKeyPair;
+			const publicJwk = await Krypton.exportKey(keyPair.publicKey, 'jwk');
+			const privateJwk = await Krypton.exportKey(keyPair.privateKey, 'jwk');
+			const publicSpki = await Krypton.exportKey(keyPair.publicKey, 'spki');
+			const privatePkcs8 = await Krypton.exportKey(keyPair.privateKey, 'pkcs8');
+
+			const importedPublicJwk = await Krypton.importKey(publicJwk, algorithm, 'jwk', { usages: publicUsages });
+			const importedPrivateJwk = await Krypton.importKey(privateJwk, algorithm, 'jwk', { usages: privateUsages });
+			const importedPublicSpki = await Krypton.importKey(publicSpki, algorithm, 'spki', { usages: publicUsages });
+			const importedPrivatePkcs8 = await Krypton.importKey(privatePkcs8, algorithm, 'pkcs8', { usages: privateUsages });
+
+			for (const publicKey of [importedPublicJwk, importedPublicSpki]) {
+				expect(publicKey.type).toBe('public');
+				expect(publicKey.usages).toEqual(publicUsages);
+			}
+			for (const privateKey of [importedPrivateJwk, importedPrivatePkcs8]) {
+				expect(privateKey.type).toBe('private');
+				expect(privateKey.usages).toEqual(privateUsages);
+			}
+		});
+
+		it('should reject malformed asymmetric key data', async () => {
+			await expect(Krypton.importKey(
+				{},
+				Krypton.Algorithm.RSA_OAEP,
+				'jwk',
+				{ usages: ['encrypt'] }
+			)).rejects.toThrow();
+
+			await expect(Krypton.importKey(
+				new Uint8Array([0x30, 0x01, 0x00]),
+				Krypton.Algorithm.ECDSA,
+				'spki',
+				{ namedCurve: 'P-256', usages: ['verify'] }
+			)).rejects.toThrow();
+		});
+
 		it('should encrypt with original key and decrypt with imported key', async () => {
 			const key = await Krypton.generateKey() as CryptoKey;
 			const exported = await Krypton.exportKey(key, 'jwk');
@@ -295,6 +349,16 @@ describe('Krypton', () => {
 			const decrypted = await Krypton.decryptBytes(parameters, keyPair.privateKey, encrypted);
 
 			expect(new Uint8Array(decrypted)).toEqual(data);
+		});
+
+		it('should reject malformed RSA-OAEP ciphertext', async () => {
+			const keyPair = await Krypton.generateKey(Krypton.Algorithm.RSA_OAEP) as CryptoKeyPair;
+
+			await expect(Krypton.decrypt(
+				Krypton.generateParameters(Krypton.Algorithm.RSA_OAEP),
+				keyPair.privateKey,
+				new Uint8Array([0x01, 0x02, 0x03])
+			)).rejects.toThrow();
 		});
 
 		it('should generate correct parameters for RSA-OAEP', () => {

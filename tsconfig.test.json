@@ -1,0 +1,14 @@
+{
+	"$schema": "https://json.schemastore.org/tsconfig",
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"rootDir": ".",
+		"noEmit": true,
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"types": [ "node" ],
+		"declaration": false,
+		"isolatedDeclarations": false
+	},
+	"include": [ "./src/**/*.ts", "./tests/**/*.ts" ]
+}

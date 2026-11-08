@@ -45,7 +45,7 @@ describe('EcdsaCipher', () => {
 			const data = 'test data';
 			const signature = await ecdsa.sign(data);
 			const tampered = new Uint8Array(signature);
-			tampered[0] ^= 0xff;
+			tampered[0] = (tampered[0] ?? 0) ^ 0xff;
 			const isValid = await ecdsa.verify(tampered.buffer, data);
 			expect(isValid).toBe(false);
 		});
