@@ -29,11 +29,15 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/krypton.d.ts",
+      "import": "./dist/krypton.js"
+    },
+    "./ciphers/*": {
+      "types": "./dist/ciphers/*.d.ts",
+      "import": "./dist/ciphers/*.js"
     }
   },
-  "types": "./dist/index.d.ts",
+  "types": "./dist/krypton.d.ts",
   "files": [
     "./dist",
     "README.md",

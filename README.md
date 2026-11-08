@@ -19,7 +19,7 @@ pnpm add @d1g1tal/krypton
 
 #### Cipher Instances (Recommended)
 
-Create cipher instances via `Krypton.create(algorithm)` for a streamlined, object-oriented API. Each cipher manages its own keys and algorithm parameters internally.
+Create cipher instances via `Krypton.create(algorithm)` for a streamlined, object-oriented API. Each cipher manages its own keys and algorithm parameters internally. Cipher modules are loaded on demand, so only the ciphers you create are loaded. To use a cipher class directly, import it from its subpath: `@d1g1tal/krypton/ciphers/aes`, `rsa`, `hmac`, `ecdsa`, or `ecdh`.
 
 ##### AesCipher
 
@@ -46,7 +46,8 @@ const aesCtr = await Krypton.create('AES-CTR');
 
 **Key import/export** — for persistent encryption across instances:
 ```typescript
-import { Krypton, AesCipher } from '@d1g1tal/krypton';
+import { Krypton } from '@d1g1tal/krypton';
+import { AesCipher } from '@d1g1tal/krypton/ciphers/aes';
 
 // Export the key for later use
 const aes = await Krypton.create('AES-GCM');
