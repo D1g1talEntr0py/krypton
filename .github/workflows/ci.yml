@@ -32,6 +32,12 @@ jobs:
       - run: pnpm lint
       - run: pnpm type-check
       - run: pnpm test:coverage
+      - name: Install Chromium for browser integration tests
+        if: matrix.node-version == 24
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run browser integration tests
+        if: matrix.node-version == 24
+        run: pnpm test:browser
       - run: pnpm build
       - run: pnpm test:package
       - name: Upload coverage to Codecov

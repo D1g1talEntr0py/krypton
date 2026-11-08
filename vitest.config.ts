@@ -6,6 +6,7 @@ export default defineConfig({
   },
 	test: {
 		environment: 'node',
+		exclude: ['**/node_modules/**', 'tests/browser/**'],
 		typecheck: { enabled: false },
 		coverage: {
 			reportsDirectory: './tests/coverage',

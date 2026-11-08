@@ -652,27 +652,53 @@ describe('Krypton.create (AES)', () => {
 			expect(areEqual).toBe(false);
 		});
 
-		it('should prepend IV to ciphertext (GCM: 12-byte IV)', async () => {
-			const aes = await Krypton.create('AES-GCM');
-			const encrypted = await aes.encrypt('test');
-			// GCM IV is 12 bytes, ciphertext includes 16-byte auth tag + encrypted data
-			const bytes = new Uint8Array(encrypted);
-			expect(bytes.byteLength).toBeGreaterThan(12);
-		});
+		it.each(['AES-GCM', 'AES-CBC', 'AES-CTR'] as const)(
+			'should use the documented prefix and interoperate with Web Crypto for %s',
+			async (algorithm) => {
+				const aes = await Krypton.create(algorithm);
+				const rawKey = await aes.exportKey('raw');
+				const nativeKey = await crypto.subtle.importKey('raw', rawKey, algorithm, false, ['encrypt', 'decrypt']);
+				const prefixLength = algorithm === 'AES-GCM' ? 12 : 16;
 
-		it('should prepend IV to ciphertext (CBC: 16-byte IV)', async () => {
-			const aes = await Krypton.create('AES-CBC');
-			const encrypted = await aes.encrypt('test');
-			const bytes = new Uint8Array(encrypted);
-			expect(bytes.byteLength).toBeGreaterThan(16);
-		});
+				for (const plaintextLength of [0, 1, 16, 17]) {
+					const plaintext = Uint8Array.from(
+						{ length: plaintextLength },
+						(_, index) => (index * 37 + 11) & 0xff
+					);
+					const encrypted = new Uint8Array(await aes.encrypt(plaintext));
+					const expectedCiphertextLength = algorithm === 'AES-GCM'
+						? plaintextLength + 16
+						: algorithm === 'AES-CBC'
+							? 16 * (Math.floor(plaintextLength / 16) + 1)
+							: plaintextLength;
 
-		it('should prepend counter to ciphertext (CTR: 16-byte counter)', async () => {
-			const aes = await Krypton.create('AES-CTR');
-			const encrypted = await aes.encrypt('test');
-			const bytes = new Uint8Array(encrypted);
-			expect(bytes.byteLength).toBeGreaterThan(16);
-		});
+					expect(encrypted.byteLength).toBe(prefixLength + expectedCiphertextLength);
+
+					const prefix = encrypted.subarray(0, prefixLength);
+					const ciphertext = encrypted.subarray(prefixLength);
+					const nativeParameters = algorithm === 'AES-GCM'
+						? { name: algorithm, iv: prefix, tagLength: 128 }
+						: algorithm === 'AES-CBC'
+							? { name: algorithm, iv: prefix }
+							: { name: algorithm, counter: prefix, length: 128 };
+					const nativeDecrypted = await crypto.subtle.decrypt(nativeParameters, nativeKey, ciphertext);
+					expect(new Uint8Array(nativeDecrypted)).toEqual(plaintext);
+
+					const nativePrefix = Uint8Array.from({ length: prefixLength }, (_, index) => index + 1);
+					const nativeEncryptionParameters = algorithm === 'AES-GCM'
+						? { name: algorithm, iv: nativePrefix, tagLength: 128 }
+						: algorithm === 'AES-CBC'
+							? { name: algorithm, iv: nativePrefix }
+							: { name: algorithm, counter: nativePrefix, length: 128 };
+					const nativeCiphertext = await crypto.subtle.encrypt(nativeEncryptionParameters, nativeKey, plaintext);
+					const nativeWireFormat = new Uint8Array(prefixLength + nativeCiphertext.byteLength);
+					nativeWireFormat.set(nativePrefix);
+					nativeWireFormat.set(new Uint8Array(nativeCiphertext), prefixLength);
+
+					expect(new Uint8Array(await aes.decryptBytes(nativeWireFormat))).toEqual(plaintext);
+				}
+			}
+		);
 	});
 
 	describe('key import / export', () => {

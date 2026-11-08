@@ -51,6 +51,7 @@
     "type-check": "tsbuild --noEmit",
     "lint": "eslint --flag unstable_native_nodejs_ts_config ./src",
     "test": "vitest run",
+    "test:browser": "vitest run --browser --config vitest.browser.config.ts",
     "test:package": "node scripts/package-smoke-test.js",
     "test:coverage": "vitest run --coverage"
   },
@@ -60,10 +61,12 @@
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.6",
     "@typescript/native": "npm:typescript@^7.0.2",
+    "@vitest/browser-playwright": "5.1.0",
     "@vitest/coverage-v8": "5.1.0",
     "eslint": "^10.14.0",
     "eslint-plugin-compat": "^7.0.2",
     "eslint-plugin-jsdoc": "^65.4.5",
+    "playwright": "^1.65.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "typescript-eslint": "^8.72.1",
     "vitest": "^5.1.0"
