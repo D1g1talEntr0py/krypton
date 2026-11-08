@@ -33,6 +33,7 @@ jobs:
       - run: pnpm type-check
       - run: pnpm test:coverage
       - run: pnpm build
+      - run: pnpm test:package
       - name: Upload coverage to Codecov
         if: matrix.node-version == 24
         uses: codecov/codecov-action@v7

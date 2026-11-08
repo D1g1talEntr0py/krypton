@@ -51,6 +51,7 @@
     "type-check": "tsbuild --noEmit",
     "lint": "eslint --flag unstable_native_nodejs_ts_config ./src",
     "test": "vitest run",
+    "test:package": "node scripts/package-smoke-test.js",
     "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
