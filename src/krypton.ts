@@ -57,7 +57,6 @@ export class Krypton {
 		decrypt: 'decrypt',
 		sign: 'sign',
 		verify: 'verify',
-		digest: 'digest',
 		deriveKey: 'deriveKey',
 		deriveBits: 'deriveBits',
 		wrapKey: 'wrapKey',
@@ -340,11 +339,11 @@ export class Krypton {
 	/**
 	 * Computes a digest (hash) of the data using the specified algorithm
 	 *
-	 * @param algorithm - The hash algorithm to use (e.g., SHA-256, SHA-512)
 	 * @param data - The data to hash (string or BufferSource)
+	 * @param algorithm - The hash algorithm to use (e.g., SHA-256, SHA-512)
 	 * @returns A promise that resolves to the hash as an ArrayBuffer
 	 */
-	static async digest(algorithm: string = Krypton.Hash.SHA_256, data: string | BufferSource): Promise<ArrayBuffer> {
+	static async digest(data: string | BufferSource, algorithm: string = Krypton.Hash.SHA_256): Promise<ArrayBuffer> {
 		const encodedData = typeof data === 'string' ? Krypton.textEncoder.encode(data) : data;
 		return await crypto.subtle.digest(algorithm, encodedData);
 	}

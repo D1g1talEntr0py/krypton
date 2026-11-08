@@ -46,9 +46,9 @@ type(optional-scope): description
 Add `!` after the type, or include a `BREAKING CHANGE:` footer:
 
 ```
-feat!: drop Node 18 support
+feat!: require Node.js 24.11.1
 
-BREAKING CHANGE: Minimum Node.js version is now 20.16.0.
+BREAKING CHANGE: Minimum Node.js version is now 24.11.1.
 ```
 
 ### 3. Push and Open a Pull Request
@@ -57,7 +57,7 @@ BREAKING CHANGE: Minimum Node.js version is now 20.16.0.
 git push -u origin feat/my-feature
 ```
 
-Open a PR targeting `main`. The CI workflow runs lint, type-check, tests, and build across Node.js 20, 22, and 24. All checks must pass.
+Open a PR targeting `main`. CI validates Node.js 24 and 26 with lint, source type-checking, coverage tests, build, and the package smoke test. Chromium browser integration tests run on Node.js 24 after installing Playwright Chromium. Release validation runs the same matrix and gates, using the Node test suite instead of coverage.
 
 ### 4. Merge to `main`
 
@@ -82,7 +82,7 @@ After the merge, the `publish.yml` workflow triggers automatically and does ever
 ### 6. Verify
 
 - Check the [Actions tab](../../actions) for the workflow run
-- Check [npm](https://www.npmjs.com/package/@d1g1tal/tsbuild) for the published version
+- Check [npm](https://www.npmjs.com/package/@d1g1tal/krypton) for the published version
 - Check [Releases](../../releases) for the GitHub release
 
 ## Dry Run (Local Testing)

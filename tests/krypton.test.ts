@@ -404,28 +404,28 @@ describe('Krypton', () => {
 	});
 
 	describe('digest', () => {
-		it('should compute a SHA-256 hash', async () => {
-			const hash = await Krypton.digest(Krypton.Hash.SHA_256, 'hello');
+		it('should compute a SHA-256 hash by default', async () => {
+			const hash = await Krypton.digest('hello');
 			expect(hash).toBeInstanceOf(ArrayBuffer);
 			expect(hash.byteLength).toBe(32); // 256 bits
 		});
 
 		it('should compute a SHA-512 hash', async () => {
-			const hash = await Krypton.digest(Krypton.Hash.SHA_512, 'hello');
+			const hash = await Krypton.digest('hello', Krypton.Hash.SHA_512);
 			expect(hash.byteLength).toBe(64); // 512 bits
 		});
 
 		it('should produce consistent hashes for same input', async () => {
-			const hash1 = await Krypton.digest(Krypton.Hash.SHA_256, 'test');
-			const hash2 = await Krypton.digest(Krypton.Hash.SHA_256, 'test');
+			const hash1 = await Krypton.digest('test');
+			const hash2 = await Krypton.digest('test');
 			const h1 = new Uint8Array(hash1);
 			const h2 = new Uint8Array(hash2);
 			expect(h1).toEqual(h2);
 		});
 
 		it('should produce different hashes for different input', async () => {
-			const hash1 = await Krypton.digest(Krypton.Hash.SHA_256, 'hello');
-			const hash2 = await Krypton.digest(Krypton.Hash.SHA_256, 'world');
+			const hash1 = await Krypton.digest('hello');
+			const hash2 = await Krypton.digest('world');
 			const h1 = new Uint8Array(hash1);
 			const h2 = new Uint8Array(hash2);
 			expect(h1).not.toEqual(h2);
@@ -433,8 +433,8 @@ describe('Krypton', () => {
 
 		it('should accept BufferSource as input', async () => {
 			const data = Krypton.encode('hello');
-			const hash1 = await Krypton.digest(Krypton.Hash.SHA_256, data);
-			const hash2 = await Krypton.digest(Krypton.Hash.SHA_256, 'hello');
+			const hash1 = await Krypton.digest(data);
+			const hash2 = await Krypton.digest('hello');
 			const h1 = new Uint8Array(hash1);
 			const h2 = new Uint8Array(hash2);
 			expect(h1).toEqual(h2);

@@ -51,7 +51,7 @@ describe('independent known-answer vectors', () => {
 	});
 
 	it('matches the FIPS 180-4 SHA-256 example for "abc"', async () => {
-		const digest = await Krypton.digest(Krypton.Hash.SHA_256, 'abc');
+		const digest = await Krypton.digest('abc');
 
 		expect(new Uint8Array(digest)).toEqual(fromHex(
 			'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'

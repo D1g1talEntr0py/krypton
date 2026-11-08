@@ -6,7 +6,7 @@
 [![codecov](https://codecov.io/gh/D1g1talEntr0py/krypton/graph/badge.svg)](https://codecov.io/gh/D1g1talEntr0py/krypton)
 [![License: MIT](https://img.shields.io/github/license/D1g1talEntr0py/krypton)](https://github.com/D1g1talEntr0py/krypton/blob/main/LICENSE)
 [![Node.js](https://img.shields.io/node/v/@d1g1tal/krypton)](https://nodejs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
 TypeScript Wrapper for the Web Crypto API
 
@@ -137,7 +137,7 @@ console.log(decrypted); // Hello World!
 
 #### Hashing
 ```typescript
-const hash = await Krypton.digest(Krypton.Hash.SHA_256, 'hello');
+const hash = await Krypton.digest('hello');
 ```
 
 #### Key Derivation (PBKDF2)
@@ -198,7 +198,7 @@ const unwrapped = await Krypton.unwrapKey('raw', wrapped, wrappingKey, wrapParam
 | `decrypt(params, key, data)` | Decrypts data to a UTF-8 string |
 | `decryptBytes(params, key, data)` | Decrypts data to an `ArrayBuffer`, preserving arbitrary plaintext bytes |
 | `generateParameters(algorithm?, options?)` | Generates algorithm parameters with random IV/nonce |
-| `digest(algorithm?, data)` | Computes a hash (SHA-1, SHA-256, SHA-384, SHA-512) |
+| `digest(data, algorithm?)` | Computes a hash (SHA-1, SHA-256, SHA-384, SHA-512; defaults to SHA-256) |
 | `sign(algorithm, key, data)` | Signs data with HMAC or ECDSA |
 | `verify(algorithm, key, signature, data)` | Verifies a signature |
 | `deriveKey(algorithm, baseKey, derivedAlg, options?)` | Derives a key using PBKDF2 or HKDF |
@@ -263,5 +263,5 @@ const unwrapped = await Krypton.unwrapKey('raw', wrapped, wrappingKey, wrapParam
 | `Krypton.Algorithm` | `AES_CBC`, `AES_CTR`, `AES_GCM`, `RSA_OAEP`, `HMAC`, `ECDSA`, `ECDH`, `PBKDF2`, `HKDF` |
 | `Krypton.Hash` | `SHA_1`, `SHA_256`, `SHA_384`, `SHA_512` |
 | `Krypton.KeyFormat` | `JWK`, `RAW`, `SPKI`, `PKCS8` |
-| `Krypton.KeyUsage` | `encrypt`, `decrypt`, `sign`, `verify`, `digest`, `deriveKey`, `deriveBits`, `wrapKey`, `unwrapKey` |
+| `Krypton.KeyUsage` | `encrypt`, `decrypt`, `sign`, `verify`, `deriveKey`, `deriveBits`, `wrapKey`, `unwrapKey` |
 | `AesCipher.Mode` | `CBC`, `CTR`, `GCM` |
