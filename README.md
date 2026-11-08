@@ -83,6 +83,8 @@ const encrypted = await rsa.encrypt('Secret');
 const decrypted = await rsa.decrypt(encrypted);
 ```
 
+With the default 4096-bit modulus and SHA-512 hash, RSA-OAEP can encrypt at most 382 bytes of plaintext after UTF-8 encoding; this is a byte limit, not a character limit. A custom modulus or hash changes the limit. For larger payloads, use a hybrid design: encrypt the data with a symmetric key and use RSA-OAEP to encrypt that key, rather than encrypting the payload directly with RSA.
+
 ##### HmacCipher
 
 Message authentication via keyed hashing.
@@ -122,6 +124,8 @@ const aliceSharedKey = await alice.deriveKey(bobPublicKey);
 const bobSharedKey = await bob.deriveKey(alicePublicKey);
 ```
 
+This example demonstrates key agreement, not a complete secure protocol. The exchanged public keys are unauthenticated, and ECDH alone does not authenticate peers. Real protocols must authenticate peer public keys and should bind protocol and session context into the resulting key derivation, using the protocol's specified HKDF and context-binding process.
+
 #### Krypton (Static API)
 ```typescript
 import { Krypton } from '@d1g1tal/krypton';
@@ -157,6 +161,8 @@ const key = await Krypton.generateKey() as CryptoKey;
 const jwk = await Krypton.exportKey(key, 'jwk');
 const imported = await Krypton.importKey(jwk);
 ```
+
+`Krypton.generateKey` and `Krypton.importKey` default `extractable` to `true`. `EcdhCipher.create` generates an extractable keypair, and `EcdhCipher.deriveKey` defaults to extractable `true`; static `Krypton.deriveKey` defaults to `false`. Extractability is a deliberate tradeoff that permits use of the export APIs; it does not automatically expose secret key bytes. Where the API supports it, set `extractable: false` when key export is unnecessary.
 
 `decrypt` continues to return a UTF-8 string for compatibility. Use `Krypton.decryptBytes(parameters, key, ciphertext)`, `aes.decryptBytes(ciphertext)`, or `rsa.decryptBytes(ciphertext)` to receive the original plaintext bytes as an `ArrayBuffer`.
 
