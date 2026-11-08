@@ -52,7 +52,7 @@
     "lint": "eslint --flag unstable_native_nodejs_ts_config ./src",
     "test": "vitest run",
     "test:browser": "vitest run --browser --config vitest.browser.config.ts",
-    "test:package": "node scripts/package-smoke-test.js",
+    "test:package": "node scripts/package-smoke-test.js && tsbuild --noEmit --project tests/package-consumer",
     "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
