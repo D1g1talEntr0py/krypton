@@ -10,16 +10,16 @@ import type { EncryptionCipher, RsaHashAlgorithm } from '../types.js';
  * @author D1g1talEntr0py <jason.dimeo@gmail.com>
  */
 export class RsaCipher implements EncryptionCipher {
-	private readonly publicKey: CryptoKey;
-	private readonly privateKey: CryptoKey;
+	readonly #publicKey: CryptoKey;
+	readonly #privateKey: CryptoKey;
 
 	/**
 	 * @param publicKey - The public key for encryption
 	 * @param privateKey - The private key for decryption
 	 */
 	private constructor(publicKey: CryptoKey, privateKey: CryptoKey) {
-		this.publicKey = publicKey;
-		this.privateKey = privateKey;
+		this.#publicKey = publicKey;
+		this.#privateKey = privateKey;
 	}
 
 	/**
@@ -55,7 +55,7 @@ export class RsaCipher implements EncryptionCipher {
 	 * @returns A promise that resolves to JsonWebKey when format is 'jwk', otherwise ArrayBuffer
 	 */
 	async exportPublicKey<F extends KeyFormat = 'jwk'>(format?: F): Promise<F extends 'jwk' ? JsonWebKey : ArrayBuffer> {
-		return await Krypton.exportKey(this.publicKey, format);
+		return await Krypton.exportKey(this.#publicKey, format);
 	}
 
 	/**
@@ -65,7 +65,7 @@ export class RsaCipher implements EncryptionCipher {
 	 * @returns A promise that resolves to JsonWebKey when format is 'jwk', otherwise ArrayBuffer
 	 */
 	async exportPrivateKey<F extends KeyFormat = 'jwk'>(format?: F): Promise<F extends 'jwk' ? JsonWebKey : ArrayBuffer> {
-		return await Krypton.exportKey(this.privateKey, format);
+		return await Krypton.exportKey(this.#privateKey, format);
 	}
 
 	/**
@@ -79,7 +79,7 @@ export class RsaCipher implements EncryptionCipher {
 		const params: RsaOaepParams = { name: Krypton.Algorithm.RSA_OAEP };
 		if (label) { params.label = label }
 
-		return await Krypton.encrypt(params, this.publicKey, data);
+		return await Krypton.encrypt(params, this.#publicKey, data);
 	}
 
 	/**
@@ -104,6 +104,6 @@ export class RsaCipher implements EncryptionCipher {
 		const params: RsaOaepParams = { name: Krypton.Algorithm.RSA_OAEP };
 		if (label) { params.label = label }
 
-		return await Krypton.decryptBytes(params, this.privateKey, data);
+		return await Krypton.decryptBytes(params, this.#privateKey, data);
 	}
 }

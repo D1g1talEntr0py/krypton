@@ -7,6 +7,7 @@ describe('EcdhCipher', () => {
 		it('should create an ECDH cipher via Krypton.create', async () => {
 			const ecdh = await Krypton.create('ECDH');
 			expect(ecdh).toBeInstanceOf(EcdhCipher);
+			expect(Reflect.ownKeys(ecdh)).toEqual([]);
 		});
 
 		it('should create from an existing key pair', async () => {

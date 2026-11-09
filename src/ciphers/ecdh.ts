@@ -10,16 +10,16 @@ import type { EcdhNamedCurve } from '../types.js';
  * @author D1g1talEntr0py <jason.dimeo@gmail.com>
  */
 export class EcdhCipher {
-	private readonly publicKey: CryptoKey;
-	private readonly privateKey: CryptoKey;
+	readonly #publicKey: CryptoKey;
+	readonly #privateKey: CryptoKey;
 
 	/**
 	 * @param publicKey - The public key to share with the other party
 	 * @param privateKey - The private key used for key derivation
 	 */
 	private constructor(publicKey: CryptoKey, privateKey: CryptoKey) {
-		this.publicKey = publicKey;
-		this.privateKey = privateKey;
+		this.#publicKey = publicKey;
+		this.#privateKey = privateKey;
 	}
 
 	/**
@@ -46,7 +46,7 @@ export class EcdhCipher {
 	 * @returns A promise that resolves to JsonWebKey when format is 'jwk', otherwise ArrayBuffer
 	 */
 	async exportPublicKey<F extends KeyFormat = 'jwk'>(format?: F): Promise<F extends 'jwk' ? JsonWebKey : ArrayBuffer> {
-		return await Krypton.exportKey(this.publicKey, format);
+		return await Krypton.exportKey(this.#publicKey, format);
 	}
 
 	/**
@@ -56,7 +56,7 @@ export class EcdhCipher {
 	 * @returns A promise that resolves to JsonWebKey when format is 'jwk', otherwise ArrayBuffer
 	 */
 	async exportPrivateKey<F extends KeyFormat = 'jwk'>(format?: F): Promise<F extends 'jwk' ? JsonWebKey : ArrayBuffer> {
-		return await Krypton.exportKey(this.privateKey, format);
+		return await Krypton.exportKey(this.#privateKey, format);
 	}
 
 	/**
@@ -70,7 +70,7 @@ export class EcdhCipher {
 	async deriveKey(otherPartyPublicKey: CryptoKey, derivedKeyAlgorithm: AesKeyGenParams | HmacKeyGenParams = { name: Krypton.Algorithm.AES_GCM, length: 256 }, options: { extractable?: boolean; usages?: KeyUsage[] } = {}): Promise<CryptoKey> {
 		const usages = options.usages ?? (derivedKeyAlgorithm.name === Krypton.Algorithm.HMAC ? ['sign', 'verify'] : ['encrypt', 'decrypt']);
 
-		return await crypto.subtle.deriveKey({ name: Krypton.Algorithm.ECDH, public: otherPartyPublicKey }, this.privateKey, derivedKeyAlgorithm, options.extractable ?? true, usages);
+		return await crypto.subtle.deriveKey({ name: Krypton.Algorithm.ECDH, public: otherPartyPublicKey }, this.#privateKey, derivedKeyAlgorithm, options.extractable ?? true, usages);
 	}
 
 	/**
@@ -81,6 +81,6 @@ export class EcdhCipher {
 	 * @returns A promise that resolves to the derived bits as an ArrayBuffer
 	 */
 	async deriveBits(otherPartyPublicKey: CryptoKey, length: number = 256): Promise<ArrayBuffer> {
-		return await crypto.subtle.deriveBits({ name: Krypton.Algorithm.ECDH, public: otherPartyPublicKey }, this.privateKey, length);
+		return await crypto.subtle.deriveBits({ name: Krypton.Algorithm.ECDH, public: otherPartyPublicKey }, this.#privateKey, length);
 	}
 }

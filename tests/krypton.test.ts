@@ -4,6 +4,14 @@ import { Krypton } from '../src/krypton.js';
 import { AesCipher } from '../src/ciphers/aes.js';
 
 describe('Krypton', () => {
+	it('does not expose internal state or helpers as own properties', () => {
+		const internalMembers = ['textEncoder', 'textDecoder', 'createTypedArray', 'defaultKeyUsages', 'defaultImportKeyUsages', 'generateKeyParameters'];
+
+		for (const member of internalMembers) {
+			expect(Reflect.ownKeys(Krypton)).not.toContain(member);
+		}
+	});
+
 	describe('encode / decode', () => {
 		it('should round-trip a basic string', () => {
 			const data = 'Hello, World!';
@@ -579,6 +587,10 @@ describe('Krypton.create (AES)', () => {
 		it('should create an AES-GCM cipher', async () => {
 			const aes = await Krypton.create('AES-GCM');
 			expect(aes).toBeInstanceOf(AesCipher);
+			expect(Reflect.ownKeys(aes)).toEqual([]);
+			for (const member of ['getIvLength', 'extractIv', 'generateParameters', 'rebuildParameters']) {
+				expect(Reflect.ownKeys(AesCipher)).not.toContain(member);
+			}
 		});
 	});
 

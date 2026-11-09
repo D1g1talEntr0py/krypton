@@ -7,6 +7,7 @@ describe('EcdsaCipher', () => {
 		it('should create an ECDSA cipher via Krypton.create', async () => {
 			const ecdsa = await Krypton.create('ECDSA');
 			expect(ecdsa).toBeInstanceOf(EcdsaCipher);
+			expect(Reflect.ownKeys(ecdsa)).toEqual([]);
 		});
 
 		it('should use the requested curve when generating a key pair', async () => {

@@ -37,8 +37,8 @@ export type CipherOptionsMap = { [K in AesAlgorithm]: { key?: Parameters<typeof 
  * @author D1g1talEntr0py <jason.dimeo@gmail.com>
  */
 export class Krypton {
-	private static textEncoder = new TextEncoder();
-	private static textDecoder = new TextDecoder();
+	static #textEncoder = new TextEncoder();
+	static #textDecoder = new TextDecoder();
 
 	static Algorithm = {
 		AES_CBC: 'AES-CBC',
@@ -85,7 +85,7 @@ export class Krypton {
 	 * @throws {Error} If the data cannot be encoded
 	 */
 	static encode(data: string): Uint8Array<ArrayBuffer> {
-		return Krypton.textEncoder.encode(data);
+		return Krypton.#textEncoder.encode(data);
 	}
 
 	/**
@@ -96,7 +96,7 @@ export class Krypton {
 	 * @throws {Error} If the data cannot be decoded
 	 */
 	static decode(data: BufferSource): string {
-		return Krypton.textDecoder.decode(data);
+		return Krypton.#textDecoder.decode(data);
 	}
 
 	/**
@@ -120,7 +120,7 @@ export class Krypton {
 			throw new Error(`Invalid size ${size}: must be a positive integer divisible by 8 and no greater than 524288 bits`);
 		}
 
-		const typedArray = Krypton.createTypedArray(size);
+		const typedArray = Krypton.#createTypedArray(size);
 		return crypto.getRandomValues(typedArray);
 	}
 
@@ -134,9 +134,9 @@ export class Krypton {
 	 */
 	static async generateKey(algorithm: string = Krypton.Algorithm.AES_GCM, options: { extractable?: boolean; usages?: KeyUsage[]; hash?: string; namedCurve?: string; modulusLength?: number } = {}): Promise<CryptoKey | CryptoKeyPair> {
 		const { extractable = true, hash, namedCurve, modulusLength } = options;
-		const usages = options.usages ?? Krypton.defaultKeyUsages(algorithm);
+		const usages = options.usages ?? Krypton.#defaultKeyUsages(algorithm);
 
-		return await crypto.subtle.generateKey(Krypton.generateKeyParameters(algorithm, { hash, namedCurve, modulusLength }), extractable, usages);
+		return await crypto.subtle.generateKey(Krypton.#generateKeyParameters(algorithm, { hash, namedCurve, modulusLength }), extractable, usages);
 	}
 
 	/**
@@ -187,8 +187,8 @@ export class Krypton {
 	 */
 	static async importKey(key: JsonWebKey | BufferSource, algorithm: string = Krypton.Algorithm.AES_GCM, format: KeyFormat = Krypton.KeyFormat.JWK, options: { extractable?: boolean; usages?: KeyUsage[]; hash?: string; namedCurve?: string } = {}): Promise<CryptoKey> {
 		const { extractable = true, hash, namedCurve } = options;
-		const usages = options.usages ?? Krypton.defaultImportKeyUsages(algorithm);
-		const keyParams = Krypton.generateKeyParameters(algorithm, { hash, namedCurve });
+		const usages = options.usages ?? Krypton.#defaultImportKeyUsages(algorithm);
+		const keyParams = Krypton.#generateKeyParameters(algorithm, { hash, namedCurve });
 
 		if (format === Krypton.KeyFormat.JWK) {
 			return await crypto.subtle.importKey(format, key as JsonWebKey, keyParams, extractable, usages);
@@ -208,7 +208,7 @@ export class Krypton {
 	 * @throws {Error} If the encryption fails
 	 */
 	static async encrypt(parameters: AesCtrParams | AesCbcParams | AesGcmParams | RsaOaepParams, key: CryptoKey, data: string | BufferSource): Promise<ArrayBuffer> {
-		return await crypto.subtle.encrypt(parameters, key, typeof data === 'string' ? Krypton.textEncoder.encode(data) : data);
+		return await crypto.subtle.encrypt(parameters, key, typeof data === 'string' ? Krypton.#textEncoder.encode(data) : data);
 	}
 
 	/**
@@ -221,7 +221,7 @@ export class Krypton {
 	 * @throws {Error} If the decryption fails
 	 */
 	static async decrypt(parameters: AesCtrParams | AesCbcParams | AesGcmParams | RsaOaepParams, key: CryptoKey, data: BufferSource): Promise<string> {
-		return Krypton.textDecoder.decode(await Krypton.decryptBytes(parameters, key, data));
+		return Krypton.#textDecoder.decode(await Krypton.decryptBytes(parameters, key, data));
 	}
 
 	/**
@@ -275,7 +275,7 @@ export class Krypton {
 	 * @returns A typed array of the specified size
 	 * @throws {Error} If the size is invalid
 	 */
-	private static createTypedArray(size: number = 128): Uint32Array<ArrayBuffer> | Uint16Array<ArrayBuffer> | Uint8Array<ArrayBuffer> {
+	static #createTypedArray(size: number = 128): Uint32Array<ArrayBuffer> | Uint16Array<ArrayBuffer> | Uint8Array<ArrayBuffer> {
 		switch (true) {
 			case size % 32 === 0: return new Uint32Array(size / 32);
 			case size % 16 === 0: return new Uint16Array(size / 16);
@@ -290,7 +290,7 @@ export class Krypton {
 	 * @param algorithm - The key algorithm
 	 * @returns The algorithm-appropriate key usages
 	 */
-	private static defaultKeyUsages(algorithm: string): KeyUsage[] {
+	static #defaultKeyUsages(algorithm: string): KeyUsage[] {
 		switch (algorithm) {
 			case Krypton.Algorithm.AES_CBC:
 			case Krypton.Algorithm.AES_CTR:
@@ -311,7 +311,7 @@ export class Krypton {
 	 * @returns The algorithm-appropriate key usages
 	 * @throws {Error} If usages must be specified for an asymmetric key
 	 */
-	private static defaultImportKeyUsages(algorithm: string): KeyUsage[] {
+	static #defaultImportKeyUsages(algorithm: string): KeyUsage[] {
 		switch (algorithm) {
 			case Krypton.Algorithm.AES_CBC:
 			case Krypton.Algorithm.AES_CTR:
@@ -333,7 +333,7 @@ export class Krypton {
 	 * @returns The parameters for key generation
 	 * @throws {Error} If the algorithm is not supported
 	 */
-	private static generateKeyParameters(algorithm: string, options?: { hash?: string; namedCurve?: string; modulusLength?: number }): AesKeyGenParams | RsaHashedKeyGenParams | HmacKeyGenParams | EcKeyGenParams {
+	static #generateKeyParameters(algorithm: string, options?: { hash?: string; namedCurve?: string; modulusLength?: number }): AesKeyGenParams | RsaHashedKeyGenParams | HmacKeyGenParams | EcKeyGenParams {
 		switch (algorithm) {
 			case Krypton.Algorithm.AES_CTR:
 			case Krypton.Algorithm.AES_CBC:
@@ -354,7 +354,7 @@ export class Krypton {
 	 * @returns A promise that resolves to the hash as an ArrayBuffer
 	 */
 	static async digest(data: string | BufferSource, algorithm: string = Krypton.Hash.SHA_256): Promise<ArrayBuffer> {
-		const encodedData = typeof data === 'string' ? Krypton.textEncoder.encode(data) : data;
+		const encodedData = typeof data === 'string' ? Krypton.#textEncoder.encode(data) : data;
 		return await crypto.subtle.digest(algorithm, encodedData);
 	}
 
@@ -367,7 +367,7 @@ export class Krypton {
 	 * @returns A promise that resolves to the signature as an ArrayBuffer
 	 */
 	static async sign(algorithm: AlgorithmIdentifier | RsaPssParams | EcdsaParams, key: CryptoKey, data: string | BufferSource): Promise<ArrayBuffer> {
-		const encodedData = typeof data === 'string' ? Krypton.textEncoder.encode(data) : data;
+		const encodedData = typeof data === 'string' ? Krypton.#textEncoder.encode(data) : data;
 		return await crypto.subtle.sign(algorithm, key, encodedData);
 	}
 
@@ -381,7 +381,7 @@ export class Krypton {
 	 * @returns A promise that resolves to true if the signature is valid
 	 */
 	static async verify(algorithm: AlgorithmIdentifier | RsaPssParams | EcdsaParams, key: CryptoKey, signature: BufferSource, data: string | BufferSource): Promise<boolean> {
-		const encodedData = typeof data === 'string' ? Krypton.textEncoder.encode(data) : data;
+		const encodedData = typeof data === 'string' ? Krypton.#textEncoder.encode(data) : data;
 		return await crypto.subtle.verify(algorithm, key, signature, encodedData);
 	}
 
@@ -406,7 +406,7 @@ export class Krypton {
 	 * @returns A promise that resolves to the imported base key
 	 */
 	static async importKeyMaterial(password: string | BufferSource, algorithm: string = Krypton.Algorithm.PBKDF2): Promise<CryptoKey> {
-		const keyData = typeof password === 'string' ? Krypton.textEncoder.encode(password) : password;
+		const keyData = typeof password === 'string' ? Krypton.#textEncoder.encode(password) : password;
 		return await crypto.subtle.importKey('raw', keyData, algorithm, false, [Krypton.KeyUsage.deriveKey, Krypton.KeyUsage.deriveBits]);
 	}
 

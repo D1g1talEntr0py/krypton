@@ -7,6 +7,7 @@ describe('HmacCipher', () => {
 		it('should create an HMAC cipher via Krypton.create', async () => {
 			const hmac = await Krypton.create('HMAC');
 			expect(hmac).toBeInstanceOf(HmacCipher);
+			expect(Reflect.ownKeys(hmac)).toEqual([]);
 		});
 
 		it('should create from an existing CryptoKey', async () => {

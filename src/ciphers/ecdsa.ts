@@ -10,9 +10,9 @@ import type { EcdsaHashAlgorithm, EcdsaNamedCurve, SigningCipher } from '../type
  * @author D1g1talEntr0py <jason.dimeo@gmail.com>
  */
 export class EcdsaCipher implements SigningCipher {
-	private readonly publicKey: CryptoKey;
-	private readonly privateKey: CryptoKey;
-	private readonly hash: EcdsaHashAlgorithm;
+	readonly #publicKey: CryptoKey;
+	readonly #privateKey: CryptoKey;
+	readonly #hash: EcdsaHashAlgorithm;
 
 	/**
 	 * @param publicKey - The public key for verification
@@ -20,9 +20,9 @@ export class EcdsaCipher implements SigningCipher {
 	 * @param hash - The hash algorithm to use
 	 */
 	private constructor(publicKey: CryptoKey, privateKey: CryptoKey, hash: EcdsaHashAlgorithm) {
-		this.publicKey = publicKey;
-		this.privateKey = privateKey;
-		this.hash = hash;
+		this.#publicKey = publicKey;
+		this.#privateKey = privateKey;
+		this.#hash = hash;
 	}
 
 	/**
@@ -50,7 +50,7 @@ export class EcdsaCipher implements SigningCipher {
 	 * @returns A promise that resolves to JsonWebKey when format is 'jwk', otherwise ArrayBuffer
 	 */
 	async exportPublicKey<F extends KeyFormat = 'jwk'>(format?: F): Promise<F extends 'jwk' ? JsonWebKey : ArrayBuffer> {
-		return await Krypton.exportKey(this.publicKey, format);
+		return await Krypton.exportKey(this.#publicKey, format);
 	}
 
 	/**
@@ -60,7 +60,7 @@ export class EcdsaCipher implements SigningCipher {
 	 * @returns A promise that resolves to JsonWebKey when format is 'jwk', otherwise ArrayBuffer
 	 */
 	async exportPrivateKey<F extends KeyFormat = 'jwk'>(format?: F): Promise<F extends 'jwk' ? JsonWebKey : ArrayBuffer> {
-		return await Krypton.exportKey(this.privateKey, format);
+		return await Krypton.exportKey(this.#privateKey, format);
 	}
 
 	/**
@@ -70,7 +70,7 @@ export class EcdsaCipher implements SigningCipher {
 	 * @returns The signature as an ArrayBuffer
 	 */
 	async sign(data: string | BufferSource): Promise<ArrayBuffer> {
-		return await Krypton.sign({ name: Krypton.Algorithm.ECDSA, hash: this.hash }, this.privateKey, data);
+		return await Krypton.sign({ name: Krypton.Algorithm.ECDSA, hash: this.#hash }, this.#privateKey, data);
 	}
 
 	/**
@@ -81,6 +81,6 @@ export class EcdsaCipher implements SigningCipher {
 	 * @returns true if the signature is valid
 	 */
 	async verify(signature: BufferSource, data: string | BufferSource): Promise<boolean> {
-		return await Krypton.verify({ name: Krypton.Algorithm.ECDSA, hash: this.hash }, this.publicKey, signature, data);
+		return await Krypton.verify({ name: Krypton.Algorithm.ECDSA, hash: this.#hash }, this.#publicKey, signature, data);
 	}
 }

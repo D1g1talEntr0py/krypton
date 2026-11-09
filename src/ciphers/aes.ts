@@ -11,18 +11,18 @@ import type { AesAlgorithm, AesMode, EncryptionCipher } from '../types.js';
  * @author D1g1talEntr0py <jason.dimeo@gmail.com>
  */
 export class AesCipher implements EncryptionCipher {
-	private readonly key: CryptoKey;
-	private readonly algorithm: AesAlgorithm;
-	private readonly mode: AesMode;
+	readonly #key: CryptoKey;
+	readonly #algorithm: AesAlgorithm;
+	readonly #mode: AesMode;
 
 	/**
 	 * @param key - The CryptoKey to use for encryption and decryption
 	 * @param algorithm - The AES algorithm (e.g., 'AES-GCM')
 	 */
 	private constructor(key: CryptoKey, algorithm: AesAlgorithm) {
-		this.key = key;
-		this.algorithm = algorithm;
-		this.mode = algorithm.slice(4) as AesMode;
+		this.#key = key;
+		this.#algorithm = algorithm;
+		this.#mode = algorithm.slice(4) as AesMode;
 	}
 
 	static Mode = {
@@ -59,7 +59,7 @@ export class AesCipher implements EncryptionCipher {
 	 * @returns A promise that resolves to JsonWebKey when format is 'jwk', otherwise ArrayBuffer
 	 */
 	async exportKey<F extends KeyFormat = 'jwk'>(format?: F): Promise<F extends 'jwk' ? JsonWebKey : ArrayBuffer> {
-		return await Krypton.exportKey(this.key, format);
+		return await Krypton.exportKey(this.#key, format);
 	}
 
 	/**
@@ -72,9 +72,9 @@ export class AesCipher implements EncryptionCipher {
 	 * @throws {Error} If the encryption fails
 	 */
 	async encrypt(data: string | BufferSource, additionalData?: BufferSource): Promise<ArrayBuffer> {
-		const parameters = AesCipher.generateParameters(this.algorithm, this.mode, additionalData);
-		const iv = AesCipher.extractIv(parameters);
-		const cipherText = await Krypton.encrypt(parameters, this.key, data);
+		const parameters = AesCipher.#generateParameters(this.#algorithm, this.#mode, additionalData);
+		const iv = AesCipher.#extractIv(parameters);
+		const cipherText = await Krypton.encrypt(parameters, this.#key, data);
 
 		const result = new Uint8Array(iv.byteLength + cipherText.byteLength);
 		result.set(iv, 0);
@@ -109,10 +109,10 @@ export class AesCipher implements EncryptionCipher {
 		const dataBytes = ArrayBuffer.isView(data)
 			? new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
 			: new Uint8Array(data);
-		const ivLength = AesCipher.getIvLength(this.mode);
-		const parameters = AesCipher.rebuildParameters(this.algorithm, this.mode, dataBytes.subarray(0, ivLength), additionalData);
+		const ivLength = AesCipher.#getIvLength(this.#mode);
+		const parameters = AesCipher.#rebuildParameters(this.#algorithm, this.#mode, dataBytes.subarray(0, ivLength), additionalData);
 
-		return await Krypton.decryptBytes(parameters, this.key, dataBytes.subarray(ivLength));
+		return await Krypton.decryptBytes(parameters, this.#key, dataBytes.subarray(ivLength));
 	}
 
 	/**
@@ -121,7 +121,7 @@ export class AesCipher implements EncryptionCipher {
 	 * @param mode - The AES mode
 	 * @returns The IV length in bytes
 	 */
-	private static getIvLength(mode: AesMode): number {
+	static #getIvLength(mode: AesMode): number {
 		switch (mode) {
 			case AesCipher.Mode.GCM: return 12; // 96 bits
 			case AesCipher.Mode.CBC:
@@ -135,7 +135,7 @@ export class AesCipher implements EncryptionCipher {
 	 * @param parameters - The encryption parameters
 	 * @returns The IV as a Uint8Array
 	 */
-	private static extractIv(parameters: AesCtrParams | AesCbcParams | AesGcmParams): Uint8Array<ArrayBuffer> {
+	static #extractIv(parameters: AesCtrParams | AesCbcParams | AesGcmParams): Uint8Array<ArrayBuffer> {
 		const source = 'counter' in parameters ? parameters.counter : parameters.iv;
 
 		return source instanceof ArrayBuffer ? new Uint8Array(source) : new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
@@ -150,7 +150,7 @@ export class AesCipher implements EncryptionCipher {
 	 * @returns The parameters for encryption and decryption
 	 * @throws {Error} If the mode is not supported
 	 */
-	private static generateParameters(algorithm: AesAlgorithm, mode: AesMode, additionalData?: BufferSource): AesCtrParams | AesCbcParams | AesGcmParams {
+	static #generateParameters(algorithm: AesAlgorithm, mode: AesMode, additionalData?: BufferSource): AesCtrParams | AesCbcParams | AesGcmParams {
 		if (mode !== AesCipher.Mode.GCM && additionalData !== undefined) { throw new Error('additionalData is only supported with AES-GCM') }
 
 		switch (mode) {
@@ -175,7 +175,7 @@ export class AesCipher implements EncryptionCipher {
 	 * @param additionalData - Optional additional authenticated data (GCM only)
 	 * @returns The parameters for decryption
 	 */
-	private static rebuildParameters(algorithm: AesAlgorithm, mode: AesMode, iv: Uint8Array<ArrayBuffer>, additionalData?: BufferSource): AesCtrParams | AesCbcParams | AesGcmParams {
+	static #rebuildParameters(algorithm: AesAlgorithm, mode: AesMode, iv: Uint8Array<ArrayBuffer>, additionalData?: BufferSource): AesCtrParams | AesCbcParams | AesGcmParams {
 		if (mode !== AesCipher.Mode.GCM && additionalData !== undefined) { throw new Error('additionalData is only supported with AES-GCM') }
 
 		switch (mode) {

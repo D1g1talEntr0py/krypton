@@ -15,6 +15,7 @@ describe('RsaCipher', () => {
 		it('should create an RSA-OAEP cipher via Krypton.create', async () => {
 			const rsa = await Krypton.create('RSA-OAEP');
 			expect(rsa).toBeInstanceOf(RsaCipher);
+			expect(Reflect.ownKeys(rsa)).toEqual([]);
 
 			const publicKey = await rsa.exportPublicKey();
 			expect(publicKey.alg).toBe('RSA-OAEP-512');

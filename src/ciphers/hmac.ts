@@ -10,13 +10,13 @@ import type { HmacHashAlgorithm, SigningCipher } from '../types.js';
  * @author D1g1talEntr0py <jason.dimeo@gmail.com>
  */
 export class HmacCipher implements SigningCipher {
-	private readonly key: CryptoKey;
+	readonly #key: CryptoKey;
 
 	/**
 	 * @param key - The CryptoKey to use for signing and verification
 	 */
 	private constructor(key: CryptoKey) {
-		this.key = key;
+		this.#key = key;
 	}
 
 	/**
@@ -50,7 +50,7 @@ export class HmacCipher implements SigningCipher {
 	 * @returns A promise that resolves to JsonWebKey when format is 'jwk', otherwise ArrayBuffer
 	 */
 	async exportKey<F extends KeyFormat = 'jwk'>(format?: F): Promise<F extends 'jwk' ? JsonWebKey : ArrayBuffer> {
-		return await Krypton.exportKey(this.key, format);
+		return await Krypton.exportKey(this.#key, format);
 	}
 
 	/**
@@ -60,7 +60,7 @@ export class HmacCipher implements SigningCipher {
 	 * @returns The signature as an ArrayBuffer
 	 */
 	async sign(data: string | BufferSource): Promise<ArrayBuffer> {
-		return await Krypton.sign(Krypton.Algorithm.HMAC, this.key, data);
+		return await Krypton.sign(Krypton.Algorithm.HMAC, this.#key, data);
 	}
 
 	/**
@@ -71,6 +71,6 @@ export class HmacCipher implements SigningCipher {
 	 * @returns true if the signature is valid
 	 */
 	async verify(signature: BufferSource, data: string | BufferSource): Promise<boolean> {
-		return await Krypton.verify(Krypton.Algorithm.HMAC, this.key, signature, data);
+		return await Krypton.verify(Krypton.Algorithm.HMAC, this.#key, signature, data);
 	}
 }
